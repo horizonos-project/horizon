@@ -2,5 +2,7 @@
 // (c) 2025- HorizonOS Project
 //
 
+#include "vga_print.h"
+
 #define K_ASSERT(_e, _msg) do \
-    { if (!_e) { __asm__ volatile("hlt"); }} while (0);
+    { if (!_e) { vga_clear(); vga_print("Exception raised!"); __asm__ volatile("cli;hlt") }} while (0);
