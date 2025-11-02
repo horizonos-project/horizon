@@ -22,7 +22,7 @@ typedef struct __attribute__((packed)) {
 } idt_ptr_t;
 
 // Installing / loading the IDT into our CPU, setting up handlers as well
-void idt_init(void);
+int idt_init(void);
 
 // These are called from assembly stubs
 

@@ -18,9 +18,9 @@ BUILD 	:= build
 ISO 	:= $(BUILD)/Horizon.iso
 KERNEL 	:= $(BUILD)/kernel.elf
 
-BOOT_SRC := src/boot/boot.asm src/boot/isr_stubs.asm
-KERNEL_SRC := src/kernel/main.c src/kernel/idt.c src/kernel/pic.c
-LINKER := src/kernel/linker.ld
+BOOT_SRC 	:= src/boot/boot.asm src/boot/isr_stubs.asm
+KERNEL_SRC 	:= src/kernel/main.c src/kernel/idt.c src/kernel/pic.c
+LINKER 		:= src/kernel/linker.ld
 
 # Expected output objs
 BOOT_OBJS	:= $(BUILD)/boot.o $(BUILD)/isr_stubs.o

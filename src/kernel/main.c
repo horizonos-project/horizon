@@ -4,13 +4,17 @@
 
 #include <stdint.h>
 
+#define OK 0
+
 void kmain(void)
 {
     vga_clear();
     vga_printf("Entering Protected Mode...\n");
-    idt_init();
-    vga_printf("IDT Loaded, PIC remapped, interrupts enabled!\n");
-    vga_printf("\nWelcome to HorizonOS (x86)!\n");
+
+    if(idt_init() == OK)
+        vga_printf("Protected mode entry OK.\n");
+    else
+        vga_printf("Protected mode entry fail!\n");
 
     for (;;) __asm__ volatile("cli; hlt");
 }

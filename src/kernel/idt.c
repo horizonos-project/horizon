@@ -75,7 +75,7 @@ static void idt_set_gate(int vec, uint32_t handler, uint16_t selector, uint8_t t
     idt[vec].offset_high = (handler >> 16) & 0xFFFF;
 }
 
-void idt_init(void)
+int idt_init(void)
 {
     // 1. Build the IDT pointer
     idt_descriptor.limit = sizeof(idt) - 1;
@@ -152,7 +152,9 @@ void idt_init(void)
     pic_remap();
 
     // 7. Enable interrupts globally
-    __asm__ volatile ("sti");
+    __asm__ volatile("sti");
+
+    return 0;
 }
 
 // ----------------------------------------------------------------------------
