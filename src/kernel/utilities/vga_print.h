@@ -32,7 +32,7 @@ static void vga_scroll(void)
 }
 
 // Clear
-void vga_clear(void) {
+inline void vga_clear(void) {
     for (int r = 0; r < VGA_HEIGHT; r++)
     {
         for (int c = 0; c < VGA_WIDTH; c++)

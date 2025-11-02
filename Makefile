@@ -29,7 +29,8 @@ OBJS        := $(BOOT_OBJS) $(KERNEL_OBJS)
 
 # Compiler/Linker flags
 CFLAGS  := -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32 -O2 \
-			-Wall -Wextra -Wno-pointer-to-int-cast -Wno-unused-parameter
+			-Wall -Wextra -Wno-pointer-to-int-cast -Wno-unused-parameter \
+			-Wno-static-in-inline
 
 LDFLAGS := -nostdlib -z max-page-size=0x1000 -T $(LINKER)
 
