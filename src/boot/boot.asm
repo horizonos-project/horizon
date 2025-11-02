@@ -1,7 +1,7 @@
 ; Horizon bootloader
 ; (c) 2025- HorizonOS Project
 ;
-; This is multiboot complaint for use with GRUB
+; This is multiboot compliant for use with GRUB
 ; Everyones favourite bootloader thing!
 ;
 
@@ -14,6 +14,7 @@ align 4
 
 SECTION .text
 global _start
+extern kmain
 
 _start:
     cli                     ; disable interrupts
@@ -26,5 +27,5 @@ _start:
 SECTION .bss
 align 16
 stack_bottom:
-    resb 16384      ; ~16KiB stack
+    resb 16384              ; ~16KiB stack
 stack_top:
