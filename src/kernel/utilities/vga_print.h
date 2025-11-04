@@ -1,6 +1,9 @@
 #ifndef VGA_PRINTF_H
 #define VGA_PRINTF_H
 
+// Even though keyboard drivers are going to be impl'd soon (November 3, 2025)
+// These will still exist, possibly repurposed into kprintf() to peek into the kernel
+
 #include <stdint.h>
 
 #define VGA_WIDTH   80
