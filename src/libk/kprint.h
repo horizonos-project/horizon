@@ -3,7 +3,7 @@
 
 #include <stdarg.h>
 #include <stdint.h>
-#include "../kernel/utilities/vga_print.h" // for vga_putc, vga_puts
+#include "../kernel/utilities/vga_print.h"
 
 static void kclear() {
     vga_clear();

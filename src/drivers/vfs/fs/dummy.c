@@ -1,4 +1,5 @@
 // TEST FILESYSTEM FOR TEST THINGS
+// THIS IS NOT A REAL FILESYSTEM
 #include "../vfs.h"
 #include "../file.h"
 #include "libk/string.h"
