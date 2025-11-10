@@ -1,8 +1,7 @@
 #ifndef VGA_PRINT_H
 #define VGA_PRINT_H
 
-// Even though keyboard drivers are going to be impl'd soon (November 3, 2025)
-// These will still exist, possibly repurposed into kprintf() to peek into the kernel
+// TODO: Repurpose and rework into a form of kprintf()
 
 #include <stdint.h>
 
@@ -32,7 +31,7 @@ static void vga_scroll(void) {
 }
 
 // Clear
-inline void vga_clear(void) {
+static inline void vga_clear(void) {
     for (int r = 0; r < VGA_HEIGHT; r++) {
         for (int c = 0; c < VGA_WIDTH; c++) {
             VGA_MEM[r * VGA_WIDTH + c] = (VGA_ATTR << 8) | ' ';
@@ -42,7 +41,7 @@ inline void vga_clear(void) {
     cursor_col = 0;
 }
 
-static void vga_newline(void) {
+static inline void vga_newline(void) {
     cursor_col = 0;
     cursor_row++;
     if (cursor_row >= VGA_HEIGHT) {
@@ -50,7 +49,7 @@ static void vga_newline(void) {
     }
 }
 
-inline void vga_putc(char ch) {
+static inline void vga_putc(char ch) {
     if (ch == '\n') {
         vga_newline();
         return;
@@ -64,7 +63,7 @@ inline void vga_putc(char ch) {
     }
 }
 
-inline void vga_puts(const char *s) {
+static inline void vga_puts(const char *s) {
     while (*s) {
         vga_putc(*s++);
     }

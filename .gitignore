@@ -1,2 +1,37 @@
+# Hidden directories
 .vscode/
-build
+.cache/
+.vs/
+
+# Build directory
+build/
+
+# Hidden by default files
+*.swp
+*.suo
+*.tmp
+*.dmp
+*.DS_Store
+*.db
+
+# Compressed files
+*.tar.gz
+*.tar.xz
+*.tar.bz2
+*.tar
+*.tgz
+*.txz
+*.rar
+*.zip
+*.7z
+
+# Archives and binaries
+*.iso
+*.elf
+*.out
+
+# Libraries and other compiler leftovers
+*.s
+*.S
+*.a
+*.so

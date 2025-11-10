@@ -1,7 +1,7 @@
 // TEST FILESYSTEM FOR TEST THINGS
 #include "../vfs.h"
 #include "../file.h"
-#include <string.h>
+#include "libk/string.h"
 
 // Hardcoded "files"
 static const char *hello_txt = "Hello from VFS!\n";

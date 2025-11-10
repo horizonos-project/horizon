@@ -1,6 +1,6 @@
 #include "vfs.h"
 #include "file.h"
-#include <string.h>
+#include "libk/string.h"
 
 // Mount table (for now, just root)
 static fs_ops_t *root_fs = NULL;

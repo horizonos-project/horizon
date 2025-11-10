@@ -1,19 +1,36 @@
 # Horizon Makefile
 # (c) 2025- HorizonOS Project
 #
-# Building Horizon requires the following tools;
-#
-# clang         --> 18.1.3
-# make          --> 4.3
-# nasm          --> 2.16.01
-# ld.lld        --> 18.1.3
-# grub-mkrescue --> 2.12
 
-# Tools
-CC 		:= clang
-LD 		:= ld.lld
-AS 		:= nasm
-OBJC 	:= llvm-objcopy
+# -----------------------------------------------------------------------------
+# Tools (And also OS detection)
+# NOTES:
+#	- MacOS users should use Homebrew for compilers/tools
+#	- Windows is explicitly not supported
+#	- Linux has most of this preinstalled (before cross tools)
+# -----------------------------------------------------------------------------
+ifeq ($(OS),Windows_NT)
+	@printf "Windows is not capable of compiling this project.\n"
+	@printf "Please use WSL or a Linux virual machine.\n"
+	@printf "WSL Help: https://learn.microsoft.com/en-us/windows/wsl/\n"
+	@false
+else
+	UNAME := $(shell uname -s)
+	ifeq ($(UNAME),Darwin)
+		# Darwin == MacOS (w/ homebrew installed)
+		# brew install i686-elf-gcc !!
+		CC 		:= i686-elf-gcc
+		LD 		:= i686-elf-ld
+		AS 		:= nasm
+		OBJC 	:= i686-elf-objcopy
+	else
+		# Linux or other *nix like systems
+		CC 		:= gcc
+		LD 		:= ld
+		AS 		:= nasm
+		OBJC 	:= objcopy
+	endif
+endif
 
 # Paths
 SRC_D	:= src
@@ -30,11 +47,6 @@ BOOT_SRC	:= $(SRC_D)/boot/boot.asm
 LIBK_SRC	:= $(shell find $(SRC_D)/libk -type f -name '*.c' 2>/dev/null)
 KERNEL_SRC	:= $(shell find $(SRC_D) -type f -name '*.c' ! -path "$(SRC_D)/libk/*")
 
-# November 2, 2025
-# BOOT_SRC 	:= src/boot/boot.asm src/boot/isr_stubs.asm
-# KERNEL_SRC 	:= src/kernel/main.c src/kernel/idt.c src/kernel/pic.c
-# LINKER 		:= src/kernel/linker.ld
-
 # Expected output objs
 BOOT_OBJS   := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(BOOT_SRC:.asm=.o))
 KERNEL_OBJS := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(KERNEL_SRC:.c=.o))
@@ -46,8 +58,8 @@ OBJS        := $(BOOT_OBJS) $(LIBK_OBJS) $(KERNEL_OBJS)
 # -----------------------------------------------------------------------------
 
 CFLAGS  := -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32 -O2 \
-			-Wall -Wextra -Wno-pointer-to-int-cast -Wno-unused-parameter \
-			-Wno-static-in-inline \
+			-fno-omit-frame-pointer -Wall -Wextra -Wno-pointer-to-int-cast \
+			-Wno-unused-parameter -Wno-unused-function \
 			-I$(SRC_D)
 
 LDFLAGS := -nostdlib -z max-page-size=0x1000 -T $(LINKER)
@@ -75,6 +87,13 @@ $(KERNEL): $(OBJS)
 	$(LD) $(LDFLAGS) -o $@ $^
 
 # -----------------------------------------------------------------------------
+# Build only the raw kernel ELF
+# -----------------------------------------------------------------------------
+raw: $(KERNEL)
+	@echo "Built raw kernel ELF @ $(KERNEL)"
+	@true
+
+# -----------------------------------------------------------------------------
 # Create the ISO image
 # -----------------------------------------------------------------------------
 iso: $(KERNEL)
@@ -84,13 +103,13 @@ iso: $(KERNEL)
 	grub-mkrescue -o $(ISO) $(BUILD)/iso
 
 # -----------------------------------------------------------------------------
-# Run ISO inside QEMU
+# Run ISO inside QEMU (assuming kernel is built)
 # -----------------------------------------------------------------------------
-run: iso
-	qemu-system-i386 -cdrom $(ISO) -serial stdio
+run: raw
+	qemu-system-i386 -kernel $(KERNEL) -serial stdio
 
-debug: iso
-	qemu-system-i386 -cdrom $(ISO) -s -S -serial stdio -display default
+debug: raw
+	qemu-system-i386 -kernel $(KERNEL) -s -S -serial stdio -display default
 
 # -----------------------------------------------------------------------------
 # Utilities
@@ -100,4 +119,4 @@ clean:
 
 rebuild: clean all
 
-.PHONY: all clean rebuild iso run
+.PHONY: all clean rebuild iso run debug raw
