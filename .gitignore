@@ -35,3 +35,6 @@ build/
 *.S
 *.a
 *.so
+
+# Very specific files
+compile_commands.json

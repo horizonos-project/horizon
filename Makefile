@@ -1,6 +1,7 @@
 # Horizon Makefile
 # (c) 2025 - HorizonOS Project
 #
+# https://open.spotify.com/track/7ehXSFlAsbadnSM93Pj4jT?si=8063e959cb184181
 
 GREEN    := \033[1;32m
 BLUE     := \033[1;34m
@@ -74,7 +75,7 @@ CFLAGS  := -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32 -O2 \
 			-DHORIZON_VERSION=\"$(VERSION)\" \
 			-DHORIZON_BUILD_DATE=\"$(BUILD_DATE)\"
 
-LDFLAGS := -nostdlib -z max-page-size=0x1000 -T $(LINKER)
+LDFLAGS := -m elf_i386 -nostdlib -z max-page-size=0x1000 -T $(LINKER)
 
 # -----------------------------------------------------------------------------
 # Build rules

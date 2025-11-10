@@ -56,6 +56,6 @@ fs_ops_t dummy_fs_ops = {
 };
 
 // Registration helper
-void dummy_fs_init(void) {
-    vfs_register_fs(&dummy_fs_ops);
+int dummy_fs_init(void) {
+    return vfs_register_fs(&dummy_fs_ops);
 }

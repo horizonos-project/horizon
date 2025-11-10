@@ -2,6 +2,7 @@
 #define MULTIBOOT_H
 
 #include <stdint.h>
+#include "../libk/kprint.h"
 
 #define MULTIBOOT_MAGIC        0x2BADB002
 
@@ -36,5 +37,37 @@ typedef struct multiboot_info {
     uint32_t mmap_length;
     uint32_t mmap_addr;
 } __attribute__((packed)) multiboot_info_t;
+
+void display_mb_info(multiboot_info_t *mb) {
+    kprintf("[mb] - Multiboot Information\n");
+
+    if (mb->flags & MB_INFO_MEM) {
+        kprintf("[mb] Lower memory: %u KB\n", mb->mem_lower);
+        kprintf("[mb] Upper memory: %u KB\n", mb->mem_upper);
+    } else {
+        kprintf("[mb] No memory info provided.\n");
+    }
+
+    if (mb->flags & MB_INFO_BOOT_DEVICE) {
+        kprintf("[mb] Boot device: 0x%08x\n", mb->boot_device);
+    }
+
+    if (mb->flags & MB_INFO_CMDLINE) {
+        const char *cmd = (const char *)(uintptr_t)mb->cmdline;
+        kprintf("[mb] Cmdline: %s\n", cmd ? cmd : "(none)");
+    }
+
+    if (mb->flags & MB_INFO_MODS) {
+        kprintf("[mb] Modules count: %u\n", mb->mods_count);
+        kprintf("[mb] Modules addr:  0x%08x\n", mb->mods_addr);
+    }
+
+    if (mb->flags & MB_INFO_MMAP) {
+        kprintf("[mb] Memory map: length=%u, addr=0x%08x\n", 
+                mb->mmap_length, mb->mmap_addr);
+    }
+
+    kprintf("[mb] - End Multiboot Information\n");
+}
 
 #endif
