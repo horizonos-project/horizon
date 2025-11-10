@@ -19,6 +19,8 @@ extern kmain
 _start:
     cli                     ; disable interrupts
     mov esp, stack_top      ; temp stack
+    push ebx                ; multiboot info struct ptr
+    push eax                ; multiboot magic num
     call kmain              ; jmp into kernel main
 .hang:                      ; Hang the CPU forever
     hlt

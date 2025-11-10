@@ -26,8 +26,9 @@ LINKER	:= $(SRC_D)/kernel/linker.ld
 # Source discovering, saves us manually speccing files!
 # -----------------------------------------------------------------------------
 
-BOOT_SRC := $(SRC_D)/boot/boot.asm $(SRC_D)/boot/isr_stubs.asm
-KERNEL_SRC := $(shell find $(SRC_D)/kernel -type f -name '*.c')
+BOOT_SRC	:= $(SRC_D)/boot/boot.asm
+LIBK_SRC	:= $(shell find $(SRC_D)/libk -type f -name '*.c' 2>/dev/null)
+KERNEL_SRC	:= $(shell find $(SRC_D) -type f -name '*.c' ! -path "$(SRC_D)/libk/*")
 
 # November 2, 2025
 # BOOT_SRC 	:= src/boot/boot.asm src/boot/isr_stubs.asm
@@ -35,9 +36,10 @@ KERNEL_SRC := $(shell find $(SRC_D)/kernel -type f -name '*.c')
 # LINKER 		:= src/kernel/linker.ld
 
 # Expected output objs
-BOOT_OBJS  := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(BOOT_SRC:.asm=.o))
-KERNEL_OBJS:= $(patsubst $(SRC_D)/%, $(BUILD)/%, $(KERNEL_SRC:.c=.o))
-OBJS       := $(BOOT_OBJS) $(KERNEL_OBJS)
+BOOT_OBJS   := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(BOOT_SRC:.asm=.o))
+KERNEL_OBJS := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(KERNEL_SRC:.c=.o))
+LIBK_OBJS	:= $(patsubst $(SRC_D)/%, $(BUILD)/%, $(LIBK_SRC:.c=.o))
+OBJS        := $(BOOT_OBJS) $(LIBK_OBJS) $(KERNEL_OBJS)
 
 # -----------------------------------------------------------------------------
 # Compiler/Linker flags
@@ -45,7 +47,8 @@ OBJS       := $(BOOT_OBJS) $(KERNEL_OBJS)
 
 CFLAGS  := -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32 -O2 \
 			-Wall -Wextra -Wno-pointer-to-int-cast -Wno-unused-parameter \
-			-Wno-static-in-inline
+			-Wno-static-in-inline \
+			-I$(SRC_D)
 
 LDFLAGS := -nostdlib -z max-page-size=0x1000 -T $(LINKER)
 
