@@ -2,6 +2,12 @@
 # (c) 2025- HorizonOS Project
 #
 
+GREEN    := \033[1;32m
+BLUE     := \033[1;34m
+YELLOW   := \033[1;33m
+RED      := \033[1;31m
+RESET    := \033[0m
+
 # -----------------------------------------------------------------------------
 # Tools (And also OS detection)
 # NOTES:
@@ -75,22 +81,26 @@ $(BUILD):
 # Assemble boot sources
 $(BUILD)/%.o: $(SRC_D)/%.asm
 	@mkdir -p $(@D)
+	@printf "$(BLUE)[ASM]$(RESET) %s\n" "$<"
 	$(AS) -f elf32 $< -o $@
 
 # Compile all C sources (recursive)
 $(BUILD)/%.o: $(SRC_D)/%.c
 	@mkdir -p $(@D)
+	@printf "$(YELLOW)[CC ]$(RESET) %s\n" "$<"
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Link final kernel ELF
 $(KERNEL): $(OBJS)
+	@printf "$(GREEN)[LD ]$(RESET) %s\n" "$@"
 	$(LD) $(LDFLAGS) -o $@ $^
+	@printf "$(GREEN)[OK!]$(RESET) Kernel linked -> $(KERNEL)\n"
 
 # -----------------------------------------------------------------------------
 # Build only the raw kernel ELF
 # -----------------------------------------------------------------------------
 raw: $(KERNEL)
-	@echo "Built raw kernel ELF @ $(KERNEL)"
+	@printf "$(GREEN)[OK!]$(RESET) Kernel image built!\n"
 	@true
 
 # -----------------------------------------------------------------------------
@@ -106,9 +116,11 @@ iso: $(KERNEL)
 # Run ISO inside QEMU (assuming kernel is built)
 # -----------------------------------------------------------------------------
 run: raw
+	@printf "$(BLUE)[RUN]$(RESET) Running kernel in qemu-system-i386"
 	qemu-system-i386 -kernel $(KERNEL) -serial stdio
 
 debug: raw
+	@printf "$(BLUE)[DBG]$(RESET) Debugging kernel in qemu-system-i386"
 	qemu-system-i386 -kernel $(KERNEL) -s -S -serial stdio -display default
 
 # -----------------------------------------------------------------------------
