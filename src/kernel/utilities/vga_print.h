@@ -2,6 +2,7 @@
 #define VGA_PRINT_H
 
 // TODO: Repurpose and rework into a form of kprintf()
+// DONE: Refer to 'src/libk/kprint.h'
 
 #include <stdint.h>
 
@@ -63,9 +64,37 @@ static inline void vga_putc(char ch) {
     }
 }
 
+// Print a single digit number (for debugging only)
+static inline void vga_put_dec(uint32_t num) {
+    char buf[11]; // up to 4294967295\0
+    int i = 0;
+
+    if (num == 0) {
+        vga_putc('0');
+        return;
+    }
+
+    while (num > 0 && i < 10) {
+        buf[i++] = '0' + (num % 10);
+        num /= 10;
+    }
+
+    while (i > 0) {
+        vga_putc(buf[--i]);
+    }
+}
+
 static inline void vga_puts(const char *s) {
     while (*s) {
         vga_putc(*s++);
+    }
+}
+
+static inline void vga_put_hex(uint32_t val) {
+    const char *hex = "0123456789ABCDEF";
+    vga_puts("0x");
+    for (int i = 28; i >= 0; i -= 4) {
+        vga_putc(hex[(val >> i) & 0xF]);
     }
 }
 
