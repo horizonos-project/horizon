@@ -144,6 +144,7 @@ iso: $(KERNEL)
 	@grub-mkrescue -o $(ISO) $(BUILD)/iso
 
 run: check-tools raw
+	@clear
 	@printf "$(BLUE)[RUN]$(RESET) Running kernel in qemu-system-i386\n"
 	@qemu-system-i386 -kernel $(KERNEL) -serial stdio
 

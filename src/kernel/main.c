@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "multiboot.h"
 #include "libk/kprint.h"
+#include "libk/time.h"
 #include "drivers/video/vga.h"
 #include "drivers/fs/ext2.h"
 #include "kernel/log.h"
@@ -53,33 +54,39 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
 
     // multiboot info
     display_mb_info(mb);
+    sleep(500);
 
     // This should only be jumped to after the kernel has finished everything
     // it needs to during its lifecycle
     goto hang_ok;
 
 hang_ok:
-    kprintf("\n\nSystem has finished executing and the kernel is halted.\n");
+    klogf("System is in a halting state! (EXEC OK)\n");
+    kprintf("\nSystem has finished executing and the kernel is halted.\n");
     kprintf("You can now power down the PC.\n");
     goto hang;
 
 // Not unused, this will come back when the OS runs post POST tests and checks on itself
 test_fail:
-    kprintf("\n\nA test has failed and the system was halted!\n");
+    klogf("System is in a halting state! (TEST FAIL)\n");
+    kprintf("\nA test has failed and the system was halted!\n");
     goto hang;
 
 not_multiboot:
-    kprintf("\n\nHorizon was not booted on a MULTIBOOT compliant system!\n");
+    klogf("System is in a halting state! (NOT MULTIBOOT)\n");
+    kprintf("\nHorizon was not booted on a MULTIBOOT compliant system!\n");
     kprintf("Please reboot Horizon on MULTIBOOT compliant loader.\n");
     goto hang;
 
 bad_ext2_fs:
-    kprintf("\n\nSystem failed to register the ext2 filesystem.\n");
+    klogf("System is in a halting state! (EXT2 BAD)\n");
+    kprintf("\nSystem failed to register the ext2 filesystem.\n");
     kprintf("The system has been halted to prevent potential damages.\n");
     goto hang;
 
 bad_vfs:
-    kprintf("\n\nSystem failed to initalize the VFS.\n");
+    klogf("System is in a halting state! (VFS BAD)\n");
+    kprintf("\nSystem failed to initalize the VFS.\n");
     kprintf("The system has been halted to prevent damage to the machine.\n");
     goto hang;
 
