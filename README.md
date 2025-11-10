@@ -27,6 +27,20 @@ Core goals for the next releases include:
 - Minimal userspace shell
 - Potential HorizonOS-specific compiler toolchain
 
+## Project Versioning
+
+Horizon uses a modified style of [Semantic Versioning](https://semver.org) that follows the structure; `X.YY.ZZ-A-[BT]`
+
+**X** is the release version tag, if this changes, then massive updates are happening across large amounts of the OS and programs are expected to break or lose functionality unless they conform to the new APIs.
+
+**YY** is the feature version tag, when new features are added (or old features are retired/modified) this will be incremented. Most programs will be fine, but some could break.
+
+**ZZ** is the patch version tag, when things get small patches, this gets incremented. This shouldn't break most programs, but it could in rare cases.
+
+**-A** is the bugfix tag, if a release has bugs, they'll be pushed under this tag and should *fix* issues rather than cause them.
+
+**\[BT\]** is build tag, this is used for non-release releases like Release Candidate (rc) or Beta (b), or some such similar tag.
+
 ## How to Compile
 
 > [!WARNING]
