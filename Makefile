@@ -28,20 +28,10 @@ endif
 ifeq ($(OS),Windows_NT)
 	$(error Windows is not supported. Please use WSL or a Linux VM.)
 else
-	UNAME := $(shell uname -s)
-	ifeq ($(UNAME),Darwin)
-		# macOS (requires `brew install i686-elf-gcc nasm`)
-		CC 		:= i686-elf-gcc
-		LD 		:= i686-elf-ld
-		AS 		:= nasm
-		OBJC 	:= i686-elf-objcopy
-	else
-		# Linux or other Unix
-		CC 		:= gcc
-		LD 		:= ld
-		AS 		:= nasm
-		OBJC 	:= objcopy
-	endif
+	CC 		:= i686-elf-gcc
+	LD 		:= i686-elf-ld
+	AS 		:= nasm
+	OBJC 	:= i686-elf-objcopy
 endif
 
 # -----------------------------------------------------------------------------
@@ -69,18 +59,34 @@ OBJS        := $(BOOT_OBJS) $(LIBK_OBJS) $(KERNEL_OBJS)
 # Flags
 # -----------------------------------------------------------------------------
 CFLAGS  := -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32 -O2 \
-			-fno-omit-frame-pointer -Wall -Wextra -Wpedantic \
+			-fno-omit-frame-pointer -fno-builtin -Wall -Wextra -Wpedantic \
 			-Wno-unused-function -Wno-unused-parameter -Wno-pointer-to-int-cast \
-			-I$(SRC_D) \
+			-I$(SRC_D) -nostdinc -mno-sse -mno-sse2 -mno-mmx -mno-3dnow \
+			-Werror=implicit-function-declaration \
 			-DHORIZON_VERSION=\"$(VERSION)\" \
 			-DHORIZON_BUILD_DATE=\"$(BUILD_DATE)\"
 
 LDFLAGS := -m elf_i386 -nostdlib -z max-page-size=0x1000 -T $(LINKER)
 
 # -----------------------------------------------------------------------------
+# Toolchain sanity check
+# -----------------------------------------------------------------------------
+check-tools:
+	@command -v $(CC) >/dev/null 2>&1 || { \
+		printf "$(RED)[ERR]$(RESET) Missing tool: $(CC)\n"; \
+		printf "       Install it via 'yay -S i686-elf-gcc'\n"; exit 1; }
+	@command -v $(LD) >/dev/null 2>&1 || { \
+		printf "$(RED)[ERR]$(RESET) Missing tool: $(LD)\n"; \
+		printf "       Install it via 'yay -S i686-elf-binutils'\n"; exit 1; }
+	@command -v $(AS) >/dev/null 2>&1 || { \
+		printf "$(RED)[ERR]$(RESET) Missing tool: $(AS)\n"; \
+		printf "       Install it via 'yay -S nasm'\n"; exit 1; }
+	@printf "$(GREEN)[OK!]$(RESET) Toolchain found and ready.\n"
+
+# -----------------------------------------------------------------------------
 # Build rules
 # -----------------------------------------------------------------------------
-all: $(KERNEL)
+all: check-tools $(KERNEL)
 
 $(BUILD):
 	$(Q)mkdir -pv $(BUILD)
@@ -126,7 +132,7 @@ iso: $(KERNEL)
 	@cp ./grub.cfg $(BUILD)/iso/boot/grub/
 	@grub-mkrescue -o $(ISO) $(BUILD)/iso
 
-run: raw
+run: check-tools raw
 	@printf "$(BLUE)[RUN]$(RESET) Running kernel in qemu-system-i386\n"
 	@qemu-system-i386 -kernel $(KERNEL) -serial stdio
 

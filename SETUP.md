@@ -4,7 +4,7 @@ To set up HorizonOS for use in an emulator such as qemu (recommended) or on actu
 
 | Tool | Version | Notes |
 | ---- | ------- | ----- |
-| GCC     | $\geq$ 15.2.0   | Compiler for C             |
+| GCC     | $\geq$ 11.2.0   | Compiler for C             |
 | NASM    | $\geq$ 2.16.01  | Intel-compatible assembler |
 | make    | $\geq$ 4.3      | Build system               |
 | grub    | latest          | Required for mkrescue      |
@@ -14,9 +14,9 @@ To set up HorizonOS for use in an emulator such as qemu (recommended) or on actu
 
 For GCC, it's recommended to use an `i686` or `i386` ELF compiler, these can usually be installed by a package manager;
 
-> **Arch Linux:** `sudo pacman -S i686-elf-gcc`
+> **Arch Linux:** `sudo yay i686-elf-binutils i686-elf-gcc`
 
-> **Debian:** `sudo apt-get install i686-elf-gcc -y`
+> **Debian:** `sudo apt-get install i686-elf-binutils i686-elf-gcc -y`
 
 > **MacOS:** `brew install i686-elf-gcc`
 
