@@ -1,11 +1,13 @@
 #include <stdint.h>
 #include "multiboot.h"
-#include "utilities/assert.h"
-#include "../libk/kprint.h"
-#include "../drivers/fs/ext2.h"
+#include "libk/kprint.h"
+#include "drivers/video/vga.h"
+#include "drivers/fs/ext2.h"
+#include "kernel/log.h"
+#include "drivers/serial/serial.h"
 
-// This begins the giant block of extern functions
-extern void vfs_init(void);
+// External subsystems
+extern int vfs_init(void);
 extern int dummy_fs_init(void);
 extern void serial_init(void);
 extern void serial_puts(const char *s);
@@ -13,27 +15,43 @@ extern void serial_puts(const char *s);
 void kmain(uint32_t magic, uint32_t mb_info_addr) {
     serial_init();
     kclear();
-    kprintf("Horizon x86 - Ver: %s | Build Date: %s\n\n", HORIZON_VERSION, HORIZON_BUILD_DATE);
+
+    kprintf("Horizon x86 - Ver: %s | Build Date: %s\n",
+        HORIZON_VERSION, HORIZON_BUILD_DATE);
 
     if (magic != MULTIBOOT_MAGIC)
         goto not_multiboot;
 
     multiboot_info_t *mb = (multiboot_info_t *)(uintptr_t)mb_info_addr;
 
-    vfs_init();
+    // Initalizing the subsystems like log and fs
     
-    if (dummy_fs_init() < 0) {
+    log_init();
+   
+    klogf("[ok] Logging initalized.\n");
+    klogf("[ok] VGA/Serial ready.\n");
+
+    if (vfs_init() < 0) {
+        klogf("[fail] VFS failure.\n");
         goto bad_vfs;
-    } else {
-        kprintf("\nVFS appears to be OK.\n");
     }
+
+    if (dummy_fs_init() < 0) {
+        klogf("[fail] DummyFS init fail.\n");
+        goto test_fail;
+    }
+
+    klogf("[ok] DummyFS initalized.\n");
 
     if (ext2_register() < 0) {
+        klogf("[fail] ext2 registration failed.\n");
         goto bad_ext2_fs;
-    } else {
-        kprintf("Filesystem (ext2) appears to be OK.\n");
     }
 
+    klogf("[ok] ext2 registered successfully.\n");
+    klogf("--------------------------------\n");
+
+    // multiboot info
     display_mb_info(mb);
 
     // This should only be jumped to after the kernel has finished everything

@@ -9,7 +9,7 @@ YELLOW   := \033[1;33m
 RED      := \033[1;31m
 RESET    := \033[0m
 
-VERSION     := 0.02.02
+VERSION     := 0.02.03
 BUILD_DATE  := $(shell date +'%Y-%m-%d_%H:%M:%S')
 
 # -----------------------------------------------------------------------------
@@ -31,6 +31,7 @@ else
 	CC 		:= i686-elf-gcc
 	LD 		:= i686-elf-ld
 	AS 		:= nasm
+	AR		:= i686-elf-ar
 	OBJC 	:= i686-elf-objcopy
 endif
 
@@ -53,6 +54,7 @@ KERNEL_SRC	:= $(shell find $(SRC_D) -type f -name '*.c' ! -path "$(SRC_D)/libk/*
 BOOT_OBJS   := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(BOOT_SRC:.asm=.o))
 KERNEL_OBJS := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(KERNEL_SRC:.c=.o))
 LIBK_OBJS	:= $(patsubst $(SRC_D)/%, $(BUILD)/%, $(LIBK_SRC:.c=.o))
+LIBK_A		:= $(BUILD)/libk/libk.a
 OBJS        := $(BOOT_OBJS) $(LIBK_OBJS) $(KERNEL_OBJS)
 
 # -----------------------------------------------------------------------------
@@ -61,7 +63,8 @@ OBJS        := $(BOOT_OBJS) $(LIBK_OBJS) $(KERNEL_OBJS)
 CFLAGS  := -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32 -O2 \
 			-fno-omit-frame-pointer -fno-builtin -Wall -Wextra -Wpedantic \
 			-Wno-unused-function -Wno-unused-parameter -Wno-pointer-to-int-cast \
-			-I$(SRC_D) -nostdinc -mno-sse -mno-sse2 -mno-mmx -mno-3dnow \
+			-I$(SRC_D) -isystem $(shell $(CC) -print-file-name=include) \
+			-nostdinc -mno-sse -mno-sse2 -mno-mmx -mno-3dnow \
 			-Werror=implicit-function-declaration \
 			-DHORIZON_VERSION=\"$(VERSION)\" \
 			-DHORIZON_BUILD_DATE=\"$(BUILD_DATE)\"
@@ -86,7 +89,7 @@ check-tools:
 # -----------------------------------------------------------------------------
 # Build rules
 # -----------------------------------------------------------------------------
-all: check-tools $(KERNEL)
+all: check-tools libk $(KERNEL)
 
 $(BUILD):
 	$(Q)mkdir -pv $(BUILD)
@@ -110,6 +113,11 @@ $(BUILD)/%.o: $(SRC_D)/%.c
 		cat build/last_build.log; \
 		$(CC) $(CFLAGS) -c $< -o $@; exit 1; }
 
+# Build libk (LibKernel) as a static archive
+$(LIBK_A): $(LIBK_OBJS)
+	$(Q)mkdir -p $(@D)
+	@printf "$(BLUE)[AR ]$(RESET) %s\n" "$@"
+	$(Q)$(AR) rcs $@ $^
 
 # Link kernel ELF
 $(KERNEL): $(OBJS)
@@ -119,6 +127,9 @@ $(KERNEL): $(OBJS)
 		cat build/last_build.log; \
 		$(LD) $(LDFLAGS) -o $@ $^; exit 1; }
 	@printf "$(GREEN)[OK!]$(RESET) Kernel linked -> $(KERNEL)\n"
+
+libk: $(LIBK_A)
+	@printf "$(GREEN)[OK!]$(RESET) libk.a built successfully.\n"
 
 # -----------------------------------------------------------------------------
 # Targets

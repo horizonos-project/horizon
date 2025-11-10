@@ -7,7 +7,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "../vfs/vfs.h"
-#include "kernel/utilities/assert.h"
 #include "libk/kprint.h"
 
 #define EXT2_SUPER_MAGIC 0xEF53
@@ -93,7 +92,7 @@ static int ext2_stat(const char *path, stat_t *st) {
 }
 
 // Registration
-int ext2_register() {
+int ext2_register(void) {
     kprintf("\n[ext2] Registering EXT2 filesystem...\n");
     int ret = vfs_register_fs(&ext2_ops);
     if (ret == 0) {

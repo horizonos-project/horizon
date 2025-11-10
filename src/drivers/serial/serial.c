@@ -1,8 +1,7 @@
 #include <stdint.h>
 #include "libk/kprint.h"
 #include "kernel/io.h"
-
-#define COM1_PORT 0x3F8
+#include "serial.h"
 
 void serial_init(void) {
     outb(COM1_PORT + 1, 0x00);    // disable interrupts
