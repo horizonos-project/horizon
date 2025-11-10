@@ -36,7 +36,7 @@ Before you build this project, ensure you have the following tools:
 
 | Tool | Version | Notes |
 | ---- | ------- | ----- |
-| Clang | $\geq$ 18.1.3  | Compiler for C/C++         |
+| GCC | $\geq$ 15.2.1 | Compiler for C/C++         |
 | NASM  | $\geq$ 2.16.01 | Intel-compatible assembler |
 | make  | $\geq$ 4.3     | Build system               |
 
