@@ -65,7 +65,8 @@ CFLAGS  := -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32 -O2 \
 			-Wno-unused-function -Wno-unused-parameter -Wno-pointer-to-int-cast \
 			-I$(SRC_D) -isystem $(shell $(CC) -print-file-name=include) \
 			-nostdinc -mno-sse -mno-sse2 -mno-mmx -mno-3dnow \
-			-Werror=implicit-function-declaration \
+			-Werror=implicit-function-declaration -Werror=return-type \
+			-Werror=incompatible-pointer-types \
 			-DHORIZON_VERSION=\"$(VERSION)\" \
 			-DHORIZON_BUILD_DATE=\"$(BUILD_DATE)\"
 
@@ -145,12 +146,23 @@ iso: $(KERNEL)
 
 run: check-tools raw
 	@clear
-	@printf "$(BLUE)[RUN]$(RESET) Running kernel in qemu-system-i386\n"
-	@qemu-system-i386 -kernel $(KERNEL) -serial stdio
+	@printf "$(BLUE)[RUN]$(RESET) Running kernel in qemu-system-i386...\n"
+	@qemu-system-i386 -kernel $(KERNEL) -m 1G \
+		-serial stdio -display default \
+		-no-reboot -no-shutdown
 
-debug: raw
-	@printf "$(BLUE)[DBG]$(RESET) Debugging kernel in qemu-system-i386\n"
-	@qemu-system-i386 -kernel $(KERNEL) -s -S -serial stdio -display default
+run-iso: check-tools iso
+	@clear
+	@printf "$(BLUE)[RUN]$(RESET) Running ISO fin qemu-system-i386...\n"
+	@qemu-system-i386 -cdrom $(ISO) -m 1G \
+	-serial stdio -display default \
+	-no-reboot -no-shutdown
+
+debug: check-tools raw
+	@printf "$(BLUE)[DBG]$(RESET) Debugging kernel in qemu-system-i386...\n"
+	@qemu-system-i386 -kernel $(KERNEL) -s -S -m 1G \
+		-serial stdio -display default \
+		-no-reboot -no-shutdown
 
 clean:
 	@rm -rf $(BUILD)
