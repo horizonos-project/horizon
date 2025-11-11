@@ -39,20 +39,24 @@ void kprintf_both(const char *fmt, ...)
     va_end(args);
 }
 
-// Write to both sinks
+// Log to both VGA + serial safely
 void klogf(const char *fmt, ...) {
-    va_list args;
+    va_list args1, args2;
 
-    va_start(args, fmt);
+    va_start(args1, fmt);
+    va_copy(args2, args1);
+
     // VGA
     kset_sink(log_vga_putc);
-    kprintf(fmt, args);
+    kvprintf(fmt, args1);
 
     // Serial
     kset_sink(log_serial_putc);
-    kprintf(fmt, args);
+    kvprintf(fmt, args2);
 
-    // Restore VGA
+    // back to VGA
     kset_sink(log_vga_putc);
-    va_end(args);
+
+    va_end(args1);
+    va_end(args2);
 }

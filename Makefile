@@ -66,13 +66,13 @@ OBJS        := $(BOOT_OBJS) $(LIBK_OBJS) $(KERNEL_OBJS)
 # -----------------------------------------------------------------------------
 # Flags (optimized for pedantic compiling, legacy asm instructions and 32 bit)
 # -----------------------------------------------------------------------------
-CFLAGS  := -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32 -O2 \
+CFLAGS  := -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32 -O1 \
 			-fno-omit-frame-pointer -fno-builtin -Wall -Wextra -Wpedantic \
 			-Wno-unused-function -Wno-unused-parameter -Wno-pointer-to-int-cast \
 			-I$(SRC_D) -isystem $(shell $(CC) -print-file-name=include) \
 			-nostdinc -mno-sse -mno-sse2 -mno-mmx -mno-3dnow \
 			-Werror=implicit-function-declaration -Werror=return-type \
-			-Werror=incompatible-pointer-types -g \
+			-Werror=incompatible-pointer-types -g -Wstrict-prototypes \
 			-DHORIZON_VERSION=\"$(VERSION)\" \
 			-DHORIZON_BUILD_DATE=\"$(BUILD_DATE)\"
 
