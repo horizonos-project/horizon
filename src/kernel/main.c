@@ -1,4 +1,6 @@
 #include <stdint.h>
+#include "kernel/isr.h"
+#include "kernel/pic.h"
 #include "multiboot.h"
 #include "libk/kprint.h"
 #include "libk/time.h"
@@ -7,7 +9,7 @@
 #include "log.h"
 #include "drivers/serial/serial.h"
 #include "mm/mm.h"
-#include "panic.h"
+#include "idt.h"
 
 // External subsystems
 extern int vfs_init(void);
@@ -20,6 +22,21 @@ extern void kheap_init(void);
 extern void *kalloc(uint32_t size);
 extern void kfree(void *ptr);
 
+// ************************************************
+// Timer test for PIT
+// ************************************************
+static uint32_t tick = 0;
+
+static void timer_callback(regs_t *r) {
+    tick++;
+    if (tick % 100 == 0)
+        kprintf("[tick] %u\n", tick);
+}
+
+void init_timer(void) {
+    irq_register_handler(32, timer_callback);
+}
+
 // Display Multiboot info during boot
 void display_mb_info(multiboot_info_t *mb) {
     kprintf_both("[mb] - Multiboot Information\n");
@@ -29,6 +46,7 @@ void display_mb_info(multiboot_info_t *mb) {
         kprintf_both("[mb] Upper memory: %u KiB\n", mb->mem_upper);
     } else {
         kprintf_both("[mb] No memory info provided.\n");
+        goto no_mb_mem_info;
     }
 
     if (mb->flags & MB_INFO_BOOT_DEVICE) {
@@ -51,6 +69,14 @@ void display_mb_info(multiboot_info_t *mb) {
     }
 
     kprintf_both("[mb] - End Multiboot Information\n");
+    return;
+
+no_mb_mem_info:
+    klogf("System is in a halting state! (NO MEM INFO)\n");
+    kprintf("No memory information has been provided and the system cannot continue.\n");
+    kprintf("Power off the machine and check RAM slots or memory chips.\n");
+    kprintf("The system has been halted to prevent undefined behavior.\n");
+    while (1) { __asm__ volatile("hlt"); }
 }
 
 void kmain(uint32_t magic, uint32_t mb_info_addr) {
@@ -68,6 +94,17 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
    
     klogf("[ok] Logging initalized.\n");
     klogf("[ok] VGA/Serial ready.\n");
+
+    idt_init();
+    isr_install();
+    irq_install();
+    pit_init(100);
+
+    klogf("[ok] IDT loaded and exceptions are online.\n");
+    klogf("[ok] ISR and IRQ are also OK.\n");
+
+    pic_clear_mask(0);  // PIT
+    pic_clear_mask(1);  // Keyboards
 
     if (vfs_init() < 0) {
         klogf("[fail] VFS failure.\n");
@@ -90,7 +127,6 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
 
     // multiboot info
     display_mb_info(mb);
-    sleep(1500);
 
     pmm_init(mb);
     pmm_dump_stats();
@@ -100,9 +136,11 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     klogf("[vmm] Virtual Memory Management is OK.\n");
 
     kheap_init();
-    klogf("[kh] Kernel heap as been allocated.\n");
+    klogf("[heap] Kernel heap as been allocated.\n");
 
-    sleep(1000);
+    __asm__ volatile("sti");
+
+    init_timer();
 
     // This should only be jumped to after the kernel has finished everything
     // it needs to during its lifecycle

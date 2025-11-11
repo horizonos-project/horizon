@@ -47,9 +47,15 @@ LINKER	:= $(SRC_D)/kernel/linker.ld
 # -----------------------------------------------------------------------------
 # Source discovery (which is super helpful)
 # -----------------------------------------------------------------------------
-BOOT_SRC	:= $(SRC_D)/boot/boot.asm
+BOOT_SRC	:= $(SRC_D)/boot/boot.asm $(SRC_D)/kernel/isr_stubs.asm
 LIBK_SRC	:= $(shell find $(SRC_D)/libk -type f -name '*.c' 2>/dev/null)
-KERNEL_SRC	:= $(shell find $(SRC_D) -type f -name '*.c' ! -path "$(SRC_D)/libk/*")
+KERNEL_SRC 	:= $(shell find $(SRC_D) -type f -name '*.c' -not -path "$(SRC_D)/libk/*" 2>/dev/null)
+
+# The many iterations of this src only to learn that I needed to rename isr.asm 
+# KERNEL_SRC 	:= $(shell find $(SRC_D)/kernel $(SRC_D)/mm $(SRC_D)/drivers -type f -name '*.c' 2>/dev/null)
+# KERNEL_SRC 	:= $(shell find $(SRC_D)/kernel $(SRC_D)/mm -type f -name '*.c' 2>/dev/null)
+# KERNEL_SRC 	:= $(shell find $(SRC_D) -type f -name '*.c' ! -path "$(SRC_D)/libk/*" 2>/dev/null)
+# KERNEL_SRC	:= $(shell find $(SRC_D) -type f -name '*.c' ! -path "$(SRC_D)/libk/*")
 
 BOOT_OBJS   := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(BOOT_SRC:.asm=.o))
 KERNEL_OBJS := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(KERNEL_SRC:.c=.o))
@@ -58,7 +64,7 @@ LIBK_A		:= $(BUILD)/libk/libk.a
 OBJS        := $(BOOT_OBJS) $(LIBK_OBJS) $(KERNEL_OBJS)
 
 # -----------------------------------------------------------------------------
-# Flags
+# Flags (optimized for pedantic compiling, legacy asm instructions and 32 bit)
 # -----------------------------------------------------------------------------
 CFLAGS  := -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32 -O2 \
 			-fno-omit-frame-pointer -fno-builtin -Wall -Wextra -Wpedantic \
@@ -115,6 +121,8 @@ $(BUILD)/%.o: $(SRC_D)/%.c
 		$(CC) $(CFLAGS) -c $< -o $@; exit 1; }
 
 # Build libk (LibKernel) as a static archive
+# NOTE: libk is NOT a libc, it is the freestanding library that the kernel
+# 		itself depends on, this is absolutely required for compilation
 $(LIBK_A): $(LIBK_OBJS)
 	$(Q)mkdir -p $(@D)
 	@printf "$(BLUE)[AR ]$(RESET) %s\n" "$@"

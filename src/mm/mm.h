@@ -23,9 +23,6 @@ void pmm_dump_stats(void);
 #define PAGE_RW      0x2
 #define PAGE_USER    0x4
 
-// typedef page_entry_t* page_table_t;
-// typedef page_entry_t* page_directory_t;
-
 typedef uint32_t page_entry_t;
 typedef struct {
     page_entry_t entries[1024];
