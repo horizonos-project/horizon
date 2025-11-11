@@ -94,8 +94,14 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
 
     pmm_init(mb);
     pmm_dump_stats();
+    klogf("[pmm] Physical Memory Management is OK.\n");
+
     vmm_init();
+    klogf("[vmm] Virtual Memory Management is OK.\n");
+
     kheap_init();
+    klogf("[kh] Kernel heap as been allocated.\n");
+
     sleep(1000);
 
     // This should only be jumped to after the kernel has finished everything

@@ -2,6 +2,9 @@
 
 To set up HorizonOS for use in an emulator such as qemu (recommended) or on actual hardware (untested) via building from the source, you will need the following tools to make this possible.
 
+> [!CAUTION]
+> This project is not in a state that one should use it as a daily-use operating system. Please do not use this for daily tasks!
+
 | Tool | Version | Notes |
 | ---- | ------- | ----- |
 | GCC     | $\geq$ 11.2.0   | Compiler for C             |
