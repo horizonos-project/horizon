@@ -14,6 +14,11 @@ extern int dummy_fs_init(void);
 extern void serial_init(void);
 extern void serial_puts(const char *s);
 
+// Kernel heap memory management
+extern void kheap_init(void);
+extern void *kalloc(uint32_t size);
+extern void kfree(void *ptr);
+
 // Display Multiboot info during boot
 void display_mb_info(multiboot_info_t *mb) {
     kprintf_both("[mb] - Multiboot Information\n");
@@ -88,7 +93,13 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     sleep(1500);
 
     pmm_init(mb);
+    pmm_dump_stats();
+    kheap_init();
     sleep(1000);
+
+    kprintf("\nTesting kalloc() function for kernel heap...\n");
+    void *test = kalloc(256);
+    kprintf("[heap] Test alloc -> %p\n", test);
 
     // This should only be jumped to after the kernel has finished everything
     // it needs to during its lifecycle
@@ -109,7 +120,7 @@ test_fail:
 not_multiboot:
     klogf("System is in a halting state! (NOT MULTIBOOT)\n");
     kprintf("\nHorizon was not booted on a MULTIBOOT compliant system!\n");
-    kprintf("Please reboot Horizon on MULTIBOOT compliant loader.\n");
+    kprintf("Please reboot Horizon on a MULTIBOOT compliant loader.\n");
     goto hang;
 
 bad_ext2_fs:

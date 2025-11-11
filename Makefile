@@ -9,7 +9,7 @@ YELLOW   := \033[1;33m
 RED      := \033[1;31m
 RESET    := \033[0m
 
-VERSION     := 0.02.03
+VERSION     := 0.02.04
 BUILD_DATE  := $(shell date +'%Y-%m-%d_%H:%M:%S')
 
 # -----------------------------------------------------------------------------
@@ -160,7 +160,7 @@ run-iso: check-tools iso
 
 debug: check-tools raw
 	@printf "$(BLUE)[DBG]$(RESET) Debugging kernel in qemu-system-i386...\n"
-	@qemu-system-i386 -kernel $(KERNEL) -s -S -m 1G \
+	@qemu-system-i386 -kernel $(KERNEL) -s -S -m 128M \
 		-serial stdio -display default \
 		-no-reboot -no-shutdown
 
