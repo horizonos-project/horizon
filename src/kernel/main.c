@@ -4,9 +4,10 @@
 #include "libk/time.h"
 #include "drivers/video/vga.h"
 #include "drivers/fs/ext2.h"
-#include "kernel/log.h"
+#include "log.h"
 #include "drivers/serial/serial.h"
 #include "mm/mm.h"
+#include "panic.h"
 
 // External subsystems
 extern int vfs_init(void);
@@ -86,7 +87,6 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     }
 
     klogf("[ok] ext2 registered successfully.\n");
-    klogf("--------------------------------\n");
 
     // multiboot info
     display_mb_info(mb);
@@ -96,10 +96,6 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     pmm_dump_stats();
     kheap_init();
     sleep(1000);
-
-    kprintf("\nTesting kalloc() function for kernel heap...\n");
-    void *test = kalloc(256);
-    kprintf("[heap] Test alloc -> %p\n", test);
 
     // This should only be jumped to after the kernel has finished everything
     // it needs to during its lifecycle
