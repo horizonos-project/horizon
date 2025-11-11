@@ -1,7 +1,7 @@
 # HorizonOS
 
-[![GitHub top language](https://img.shields.io/github/languages/top/horizonos-project/horizon?logo=c&label=)](https://github.com/horizonos-project/horizon/blob/master/Makefile)
-[![GitHub license](https://img.shields.io/github/license/horizonos-project/horizon)](https://github.com/horizonos-project/horizon/blob/master/LICENSE)
+[![GitHub top language](https://img.shields.io/github/languages/top/horizonos-project/horizon?logo=c&label=)](https://github.com/horizonos-project/horizon/blob/main/Makefile)
+[![GitHub license](https://img.shields.io/github/license/horizonos-project/horizon)](https://github.com/horizonos-project/horizon/blob/main/LICENSE)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/horizonos-project/horizon)](https://github.com/horizonos-project/horizon/commits)
 
 Horizon OS (sometimes 'HorizonOS' or 'Horizon') is a 32-bit Operating System. Horizon is written mostly in C and Intel Assembly. This exists as a side project, something to work on semi-frequently to see if something interesting can come from it.
