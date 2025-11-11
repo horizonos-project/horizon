@@ -83,14 +83,17 @@ void pic_send_eoi(uint8_t irq)
     outb(PIC1_CMD, 0x20);
 }
 
-void pit_init(uint32_t frq)
-{
-    if (frq == 0) {
-        klogf("\n[pit] A frequency of 0 is invalid!\n");
-    }
-    
-    uint32_t divisor = 1193180 / frq;
+void pit_init(uint32_t freq) {
+    if (!freq)
+        klogf("pit_init: frequency == 0");
+
+    uint32_t divisor = 1193180 / freq;
+    if (!divisor)
+        klogf("pit_init: divisor == 0 (freq=%u)", freq);
+
     outb(0x43, 0x36);
     outb(0x40, (uint8_t)(divisor & 0xFF));
     outb(0x40, (uint8_t)((divisor >> 8) & 0xFF));
+
+    kprintf("[pit] freq=%u Hz, divisor=%u\n", freq, divisor);
 }

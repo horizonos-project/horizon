@@ -72,7 +72,7 @@ CFLAGS  := -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32 -O2 \
 			-I$(SRC_D) -isystem $(shell $(CC) -print-file-name=include) \
 			-nostdinc -mno-sse -mno-sse2 -mno-mmx -mno-3dnow \
 			-Werror=implicit-function-declaration -Werror=return-type \
-			-Werror=incompatible-pointer-types \
+			-Werror=incompatible-pointer-types -g \
 			-DHORIZON_VERSION=\"$(VERSION)\" \
 			-DHORIZON_BUILD_DATE=\"$(BUILD_DATE)\"
 

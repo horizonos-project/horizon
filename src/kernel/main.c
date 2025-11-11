@@ -100,11 +100,13 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     irq_install();
     pit_init(100);
 
-    klogf("[ok] IDT loaded and exceptions are online.\n");
-    klogf("[ok] ISR and IRQ are also OK.\n");
+    irq_register_handler(32, timer_callback);
 
     pic_clear_mask(0);  // PIT
     pic_clear_mask(1);  // Keyboards
+    
+    klogf("[ok] IDT loaded and exceptions are online.\n");
+    klogf("[ok] ISR and IRQ are also OK.\n");
 
     if (vfs_init() < 0) {
         klogf("[fail] VFS failure.\n");

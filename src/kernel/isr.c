@@ -110,13 +110,11 @@ void isr_handler(regs_t* r)
     uint32_t int_no = r->int_no;
 
     if (int_no < 32) {
-        // CPU exception
-        kprintf("[exc] CPU exception %u\n", int_no);
-        // you can add panicf here later
+        kprintf("[exc] CPU exception %u at EIP=0x%08x\n",
+                int_no, r->eip);
         return;
     }
 
-    // IRQ from PIC (32–47)
     uint8_t irq = (uint8_t)(int_no - 32);
 
     if (interrupt_handlers[int_no]) {
