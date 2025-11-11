@@ -1,31 +1,43 @@
 #include <stdint.h>
+#include "syscall.h"
 #include "kernel/idt.h"
 #include "kernel/isr.h"
-#include "libk/kprint.h"
+#include "kernel/log.h"
+#include "sys_process.h"
 
-typedef uint32_t (*syscall_t)(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
+extern void isr_syscall_stub(void);
 
-#define MAX_SYSCALLS 256
 static syscall_t syscalls[MAX_SYSCALLS];
 
-void syscall_register(uint8_t num, syscall_t func)
-{
+void syscall_register(uint8_t num, syscall_t func) {
+    if (num >= MAX_SYSCALLS)
+        return;
+
     syscalls[num] = func;
 }
 
-void syscall_init(void)
-{
-    extern void isr_syscall_stub(void);
-    idt_set_gate(0x80, (uint32_t)isr_syscall_stub, 0x08, 0xEE);
-    kprintf("[syscall] Interface initialized at vector 0x80\n");
+// STUB: FINISH ASAP.
+void syscall_register_all(void) {
+    syscall_register(SYS_EXIT, sys_exit);
+    syscall_register(SYS_GETPID, sys_getpid);
+    syscall_register(SYS_WRITE, sys_write);
 }
 
-void syscall_handler(regs_t *r)
-{
+void syscall_init(void) {
+    idt_set_gate(0x80, (uint32_t)isr_syscall_stub, 0x08, 0xEE);
+    klogf("[sysint] Interface created at vector 0x80.\n");
+}
+
+void syscall_handler(regs_t *r) {
     uint32_t num = r->eax;
-    if (num < MAX_SYSCALLS && syscalls[num]) {
-        r->eax = syscalls[num](r->ebx, r->ecx, r->edx, r->esi, r->edi);
-    } else {
-        kprintf("[syscall] Invalid syscall: %u\n", num);
+
+    if (num >= MAX_SYSCALLS || syscalls[num] == SYSCALL_NULL) {
+        klogf("[sysint] Unknown SYSCALL: %u\n", num);
     }
+
+    uint32_t ret = syscalls[num](
+        r->ebx, r->ecx, r->edx, r->esi, r->edi
+    );
+
+    r->eax = ret;
 }

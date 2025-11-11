@@ -94,6 +94,26 @@ check-tools:
 	@printf "$(GREEN)[OK!]$(RESET) Toolchain found and ready.\n"
 
 # -----------------------------------------------------------------------------
+# Utility to see all the sources that Make picked up on
+# -----------------------------------------------------------------------------
+list-src:
+	@printf "$(BLUE)--- Source Discovery ---$(RESET)\n"
+	@printf "$(YELLOW)Boot ASM:$(RESET)\n"
+	@printf "  %s\n" $(BOOT_SRC)
+	@echo
+	@printf "$(YELLOW)Kernel ASM:$(RESET)\n"
+	@printf "  %s\n" $(KERNEL_ASM_SRC)
+	@echo
+	@printf "$(YELLOW)Kernel C:$(RESET)\n"
+	@printf "  %s\n" $(KERNEL_SRC)
+	@echo
+	@printf "$(YELLOW)libk:$(RESET)\n"
+	@printf "  %s\n" $(LIBK_SRC)
+	@echo
+	@printf "$(GREEN)--- Object targets ---$(RESET)\n"
+	@printf "  %s\n" $(OBJS)
+
+# -----------------------------------------------------------------------------
 # Build rules
 # -----------------------------------------------------------------------------
 all: check-tools libk $(KERNEL)

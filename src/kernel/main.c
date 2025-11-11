@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "kernel/isr.h"
 #include "kernel/pic.h"
+#include "kernel/syscall/syscall.h"
 #include "multiboot.h"
 #include "libk/kprint.h"
 #include "drivers/video/vga.h"
@@ -97,6 +98,8 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     idt_init();
     isr_install();
     irq_install();
+    syscall_init();
+    syscall_register_all();
     pit_init(100);
 
     irq_register_handler(32, timer_callback);
