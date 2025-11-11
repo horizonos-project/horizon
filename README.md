@@ -1,6 +1,6 @@
 # HorizonOS
 
-[![GitHub top language](https://img.shields.io/github/languages/top/horizonos-project/horizon?logo=c&label=)](https://github.com/horizonos-project/horizon/blob/master/src/kernel/Makefile)
+[![GitHub top language](https://img.shields.io/github/languages/top/horizonos-project/horizon?logo=c&label=)](https://github.com/horizonos-project/horizon/blob/master/Makefile)
 [![GitHub license](https://img.shields.io/github/license/horizonos-project/horizon)](https://github.com/horizonos-project/horizon/blob/master/LICENSE)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/horizonos-project/horizon)](https://github.com/horizonos-project/horizon/commits)
 
