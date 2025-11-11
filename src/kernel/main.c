@@ -94,6 +94,7 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
 
     pmm_init(mb);
     pmm_dump_stats();
+    vmm_init();
     kheap_init();
     sleep(1000);
 

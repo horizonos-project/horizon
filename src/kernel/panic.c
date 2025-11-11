@@ -1,4 +1,5 @@
 #include "../libk/kprint.h"
+#include "panic.h"
 
 __attribute__((noreturn)) void panicf(const char* fmt, ...) {
     va_list args;
