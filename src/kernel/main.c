@@ -51,9 +51,6 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     serial_init();
     kclear();
 
-    kprintf("Horizon x86 - Ver: %s | Build Date: %s\n",
-        HORIZON_VERSION, HORIZON_BUILD_DATE);
-
     if (magic != MULTIBOOT_MAGIC)
         goto not_multiboot;
 
@@ -91,7 +88,6 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     sleep(1500);
 
     pmm_init(mb);
-
     sleep(1000);
 
     // This should only be jumped to after the kernel has finished everything

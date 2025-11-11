@@ -147,14 +147,14 @@ iso: $(KERNEL)
 run: check-tools raw
 	@clear
 	@printf "$(BLUE)[RUN]$(RESET) Running kernel in qemu-system-i386...\n"
-	@qemu-system-i386 -kernel $(KERNEL) -m 1G \
+	@qemu-system-i386 -kernel $(KERNEL) -m 128M \
 		-serial stdio -display default \
 		-no-reboot -no-shutdown
 
 run-iso: check-tools iso
 	@clear
 	@printf "$(BLUE)[RUN]$(RESET) Running ISO fin qemu-system-i386...\n"
-	@qemu-system-i386 -cdrom $(ISO) -m 1G \
+	@qemu-system-i386 -cdrom $(ISO) -m 128M \
 	-serial stdio -display default \
 	-no-reboot -no-shutdown
 
