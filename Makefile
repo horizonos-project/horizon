@@ -47,7 +47,7 @@ LINKER	:= $(SRC_D)/kernel/linker.ld
 # -----------------------------------------------------------------------------
 # Source discovery (which is super helpful)
 # -----------------------------------------------------------------------------
-BOOT_SRC	:= $(SRC_D)/boot/boot.asm $(SRC_D)/kernel/isr_stubs.asm
+BOOT_SRC	:= $(SRC_D)/boot/boot.asm $(SRC_D)/kernel/isr_stubs.asm $(SRC_D)/kernel/syscall/syscall_asm.asm
 LIBK_SRC	:= $(shell find $(SRC_D)/libk -type f -name '*.c' 2>/dev/null)
 KERNEL_SRC 	:= $(shell find $(SRC_D) -type f -name '*.c' -not -path "$(SRC_D)/libk/*" 2>/dev/null)
 

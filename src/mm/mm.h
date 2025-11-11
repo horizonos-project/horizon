@@ -4,6 +4,13 @@
 #include <stdint.h>
 #include "../kernel/multiboot.h"
 
+typedef struct {
+    uint32_t ds;                        // Data segment
+    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax; // Pushed by pusha
+    uint32_t int_no, err_code;          // Interrupt number and error code
+    uint32_t eip, cs, eflags, useresp, ss; // Pushed by CPU
+} registers_t;
+
 extern uint32_t kernel_start[];
 extern uint32_t kernel_end[];
 

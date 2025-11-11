@@ -20,6 +20,23 @@ void vmm_enable_paging(void) {
     __asm__ volatile("mov %0, %%cr0" :: "r"(cr0));
 }
 
+void page_fault_handler(registers_t *regs) {
+    uint32_t faulting_addr;
+    __asm__ volatile("mov %%cr2, %0" : "=r"(faulting_addr));
+    
+    klogf("\n=== PAGE FAULT ===\n");
+    klogf("Faulting address: 0x%08x\n", faulting_addr);
+    klogf("Error code: 0x%x\n", regs->err_code);
+    
+    if (!(regs->err_code & 0x1)) klogf("  Reason: Page not present\n");
+    if (regs->err_code & 0x2) klogf("  Access: Write\n");
+    else klogf("  Access: Read\n");
+    if (regs->err_code & 0x4) klogf("  Mode: User\n");
+    else klogf("  Mode: Kernel\n");
+    
+    panicf("Page fault (cannot continue)");
+}
+
 void vmm_map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
     uint32_t dir_idx = virt >> 22;
     uint32_t tbl_idx = (virt >> 12) & 0x3FF;
@@ -40,7 +57,6 @@ void vmm_map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
 
     table->entries[tbl_idx] = (phys & ~0xFFF) | (flags & 0xFFF);
 }
-
 
 void vmm_init(void) {
     kprintf("[vmm] Initializing virtual memory...\n");
