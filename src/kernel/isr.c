@@ -2,8 +2,6 @@
 #include "idt.h"
 #include "../libk/kprint.h"
 #include "kernel/pic.h"
-#include "log.h"
-#include "panic.h"
 
 static isr_t interrupt_handlers[256];
 

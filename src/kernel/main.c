@@ -3,7 +3,6 @@
 #include "kernel/pic.h"
 #include "multiboot.h"
 #include "libk/kprint.h"
-#include "libk/time.h"
 #include "drivers/video/vga.h"
 #include "drivers/fs/ext2.h"
 #include "log.h"
@@ -104,7 +103,7 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
 
     pic_clear_mask(0);  // PIT
     pic_clear_mask(1);  // Keyboards
-    
+
     klogf("[ok] IDT loaded and exceptions are online.\n");
     klogf("[ok] ISR and IRQ are also OK.\n");
 
