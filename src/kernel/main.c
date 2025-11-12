@@ -155,7 +155,7 @@ hang_ok:
     kprintf("You can now power down the PC.\n");
     goto hang;
 
-// Not unused, this will come back when the OS runs post POST tests and checks on itself
+// Not unused, this will come back when the OS runs self-tests and one of them fails
 test_fail:
     klogf("System is in a halting state! (TEST FAIL)\n");
     kprintf("\nA test has failed and the system was halted!\n");
