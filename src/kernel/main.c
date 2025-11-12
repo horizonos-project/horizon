@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "kernel/io.h"
 #include "kernel/isr.h"
 #include "kernel/pic.h"
 #include "kernel/syscall/syscall.h"
@@ -29,12 +30,13 @@ static uint32_t tick = 0;
 
 static void timer_callback(regs_t *r) {
     tick++;
-    if (tick % 100 == 0)
+    if (tick % 2 == 0)
         kprintf("[tick] %u\n", tick);
 }
 
 void init_timer(void) {
     irq_register_handler(32, timer_callback);
+    klogf("[ok] Timer handler registered.\n");
 }
 
 // Display Multiboot info during boot
@@ -100,12 +102,16 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     irq_install();
     syscall_init();
     syscall_register_all();
+
+    init_timer();
+
     pit_init(100);
+    pit_check();
 
-    irq_register_handler(32, timer_callback);
+    pic_clear_mask(0);
 
-    pic_clear_mask(0);  // PIT
-    pic_clear_mask(1);  // Keyboards
+    uint8_t mask = inb(0x21);
+    klogf("[pic] PIC1 mask is 0x%02x (bit 0 should be 0)\n", mask);
 
     klogf("[ok] IDT loaded and exceptions are online.\n");
     klogf("[ok] ISR and IRQ are also OK.\n");
@@ -144,7 +150,22 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
 
     __asm__ volatile("sti");
 
-    init_timer();
+    klogf("[cpu] Interrupts enabled via sti\n");
+
+    // Check EFLAGS
+    uint32_t eflags;
+    __asm__ volatile("pushf; pop %0" : "=r"(eflags));
+    klogf("[cpu] EFLAGS: 0x%08x\n", eflags);
+    klogf("[cpu] IF bit (bit 9): %u\n", (eflags >> 9) & 1);
+
+    if (!((eflags >> 9) & 1)) {
+        klogf("[cpu] CRITICAL: Interrupts are NOT enabled!\n");
+        klogf("sti didn't work");
+    }
+
+    for (volatile int i = 0; i < 1000000000ULL; i++) {
+        __asm__ volatile("nop");
+    }
 
     // This should only be jumped to after the kernel has finished everything
     // it needs to during its lifecycle
@@ -181,5 +202,7 @@ bad_vfs:
     goto hang;
 
 hang:
-    while(1) { __asm__ volatile("hlt"); }
+    while(1) { 
+        __asm__ volatile("hlt"); 
+    }
 }

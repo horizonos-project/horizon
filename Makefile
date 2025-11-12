@@ -79,30 +79,12 @@ CFLAGS  := -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32 -O1 \
 LDFLAGS := -m elf_i386 -nostdlib -z max-page-size=0x1000 -T $(LINKER)
 
 # -----------------------------------------------------------------------------
-# Toolchain sanity check
-# -----------------------------------------------------------------------------
-check-tools:
-	@command -v $(CC) >/dev/null 2>&1 || { \
-		printf "$(RED)[ERR]$(RESET) Missing tool: $(CC)\n"; \
-		printf "       Install it via 'yay -S i686-elf-gcc'\n"; exit 1; }
-	@command -v $(LD) >/dev/null 2>&1 || { \
-		printf "$(RED)[ERR]$(RESET) Missing tool: $(LD)\n"; \
-		printf "       Install it via 'yay -S i686-elf-binutils'\n"; exit 1; }
-	@command -v $(AS) >/dev/null 2>&1 || { \
-		printf "$(RED)[ERR]$(RESET) Missing tool: $(AS)\n"; \
-		printf "       Install it via 'yay -S nasm'\n"; exit 1; }
-	@printf "$(GREEN)[OK!]$(RESET) Toolchain found and ready.\n"
-
-# -----------------------------------------------------------------------------
 # Utility to see all the sources that Make picked up on
 # -----------------------------------------------------------------------------
 list-src:
 	@printf "$(BLUE)--- Source Discovery ---$(RESET)\n"
 	@printf "$(YELLOW)Boot ASM:$(RESET)\n"
 	@printf "  %s\n" $(BOOT_SRC)
-	@echo
-	@printf "$(YELLOW)Kernel ASM:$(RESET)\n"
-	@printf "  %s\n" $(KERNEL_ASM_SRC)
 	@echo
 	@printf "$(YELLOW)Kernel C:$(RESET)\n"
 	@printf "  %s\n" $(KERNEL_SRC)
@@ -116,7 +98,7 @@ list-src:
 # -----------------------------------------------------------------------------
 # Build rules
 # -----------------------------------------------------------------------------
-all: check-tools libk $(KERNEL)
+all: libk $(KERNEL)
 
 $(BUILD):
 	$(Q)mkdir -pv $(BUILD)
@@ -172,21 +154,21 @@ iso: $(KERNEL)
 	@cp ./grub.cfg $(BUILD)/iso/boot/grub/
 	@grub-mkrescue -o $(ISO) $(BUILD)/iso
 
-run: check-tools raw
+run: raw
 	@clear
 	@printf "$(BLUE)[RUN]$(RESET) Running kernel in qemu-system-i386...\n"
 	@qemu-system-i386 -kernel $(KERNEL) -m 128M \
 		-serial stdio -display default \
 		-no-reboot -no-shutdown
 
-run-iso: check-tools iso
+run-iso: iso
 	@clear
 	@printf "$(BLUE)[RUN]$(RESET) Running ISO fin qemu-system-i386...\n"
 	@qemu-system-i386 -cdrom $(ISO) -m 128M \
 	-serial stdio -display default \
 	-no-reboot -no-shutdown
 
-debug: check-tools raw
+debug: raw
 	@printf "$(BLUE)[DBG]$(RESET) Debugging kernel in qemu-system-i386...\n"
 	@qemu-system-i386 -kernel $(KERNEL) -s -S -m 128M \
 		-serial stdio -display default \

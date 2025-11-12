@@ -17,6 +17,7 @@ global irq8, irq9, irq10, irq11, irq12, irq13, irq14, irq15
 
 global isr_common_stub
 extern isr_handler
+extern irq_handler
 
 ; Helper macros:
 ; - For exceptions without errcode: push 0 then int_no
@@ -76,7 +77,7 @@ ISR_NOERR 31
 irq%1:
     push dword 0          ; fake error code
     push dword %2         ; int number (32 + IRQn)
-    jmp isr_common_stub
+    jmp irq_common_stub
 %endmacro
 
 IRQ_STUB 0, 32
@@ -128,5 +129,35 @@ isr_common_stub:
     popa
 
     add esp, 8          ; drop int_no + err_code
+    sti
+    iretd
+
+; I cannot believe we got this close to userland without this
+; Damn, that's both horrifying and neat.
+irq_common_stub:
+    pusha
+    push ds
+    push es
+    push fs
+    push gs
+
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+
+    mov eax, esp
+    push eax
+    call irq_handler    ; ← IRQs go here!
+    add esp, 4
+
+    pop gs
+    pop fs
+    pop es
+    pop ds
+    popa
+
+    add esp, 8
     sti
     iretd

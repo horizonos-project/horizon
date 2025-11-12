@@ -1,7 +1,9 @@
 #include "isr.h"
 #include "idt.h"
 #include "../libk/kprint.h"
+#include "kernel/log.h"
 #include "kernel/pic.h"
+#include <stdint.h>
 
 static isr_t interrupt_handlers[256];
 
@@ -98,11 +100,6 @@ static const char *exception_messages[32] = {
     "Reserved"
 };
 
-void irq_register_handler(uint8_t n, isr_t handler)
-{
-    interrupt_handlers[n] = handler;
-}
-
 void isr_handler(regs_t* r)
 {
     uint32_t int_no = r->int_no;
@@ -117,6 +114,35 @@ void isr_handler(regs_t* r)
 
     if (interrupt_handlers[int_no]) {
         interrupt_handlers[int_no](r);
+    }
+
+    pic_send_eoi(irq);
+}
+
+static irq_handler_t irq_handlers[16] = {0};
+
+void irq_register_handler(uint8_t irq, irq_handler_t handler) {
+    if (irq < 16) {
+        irq_handlers[irq] = handler;
+        klogf("[irq] Registered handler for IRQ%u\n", irq);
+    }
+}
+
+void irq_handler(regs_t *r) {
+    // klogf("[irq] RAW int_no: 0x%08x\n", r->int_no);
+    // klogf("[irq] RAW err_code: 0x%08x\n", r->err_code);
+
+    if (r->int_no < 32 || r->int_no > 47) {
+        klogf("[irq] ERROR: Invalid int_no! (expected 32-47)\n");
+        pic_send_eoi(0);  // Just EOI IRQ0 and hope for the best
+        return;
+    }
+
+    // Recall: IRQs are mapped 32~47
+    uint8_t irq = r->int_no - 32;
+
+    if (irq < 16 && irq_handlers[irq]) {
+        irq_handlers[irq](r);
     }
 
     pic_send_eoi(irq);

@@ -56,17 +56,19 @@ extern void irq14(void);
 extern void irq15(void);
 
 typedef struct regs {
-    uint32_t ds;
+    uint32_t gs, fs, es, ds;
     uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
     uint32_t int_no, err_code;
     uint32_t eip, cs, eflags, useresp, ss;
 } regs_t;
 
 typedef void (*isr_t)(regs_t* r);
+typedef void (*irq_handler_t)(regs_t *r);
 
 void isr_install(void);                // set IDT entries for 0–31
 void irq_install(void);                // set IDT entries for 32–47 and remap PIC
 void isr_handler(regs_t* r);           // called from asm stub
-void irq_register_handler(uint8_t n, isr_t handler);
+void irq_register_handler(uint8_t irq, irq_handler_t handler);
+void irq_handler(regs_t *r);
 
 #endif // ISR_H
