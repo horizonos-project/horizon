@@ -23,22 +23,6 @@ extern void kheap_init(void);
 extern void *kalloc(uint32_t size);
 extern void kfree(void *ptr);
 
-// ************************************************
-// Timer test for PIT
-// ************************************************
-static uint32_t tick = 0;
-
-static void timer_callback(regs_t *r) {
-    tick++;
-    if (tick % 2 == 0)
-        kprintf("[tick] %u\n", tick);
-}
-
-void init_timer(void) {
-    irq_register_handler(32, timer_callback);
-    klogf("[ok] Timer handler registered.\n");
-}
-
 // Display Multiboot info during boot
 void display_mb_info(multiboot_info_t *mb) {
     kprintf_both("[mb] - Multiboot Information\n");
@@ -103,8 +87,6 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     syscall_init();
     syscall_register_all();
 
-    init_timer();
-
     pit_init(100);
     pit_check();
 
@@ -161,10 +143,6 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     if (!((eflags >> 9) & 1)) {
         klogf("[cpu] CRITICAL: Interrupts are NOT enabled!\n");
         klogf("sti didn't work");
-    }
-
-    for (volatile int i = 0; i < 1000000000ULL; i++) {
-        __asm__ volatile("nop");
     }
 
     // This should only be jumped to after the kernel has finished everything
