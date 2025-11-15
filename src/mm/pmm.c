@@ -81,7 +81,7 @@ void pmm_init(multiboot_info_t *mb) {
         }
     }
 
-    // Reserving ~1MiB for legacy purposes (and it causes bugs all over)
+    // Reserving ~1MiB for legacy purposes (and it causes bugs all over if we don't)
     kprintf("[pmm] Reserving low 1 MiB region...\n");
     for (uint32_t addr = 0; addr < 0x00100000; addr += FRAME_SIZE) {
         uint32_t frame = addr / FRAME_SIZE;
