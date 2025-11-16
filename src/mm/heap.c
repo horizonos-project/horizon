@@ -1,44 +1,71 @@
-#include <stdint.h>
-#include "../libk/kprint.h"
-#include "mm.h"
-#include "../kernel/log.h"
+#include "heap.h"
+#include "kernel/log.h"
+#include "vmm.h"
 
-#define HEAP_INITIAL_PAGES 16  // 16 * 4KiB = 64KiB initial heap
+// Heap configuration
+#define HEAP_START      0x10000000  // Start at 256 MB virtual
+#define HEAP_MAX_SIZE   (64 * 1024 * 1024)  // Max 64 MB
 
+// Heap state
 static uint32_t heap_start = 0;
-static uint32_t heap_end   = 0;
-static uint32_t heap_curr  = 0;
+static uint32_t heap_end = 0;
+static uint32_t heap_current = 0;
 
 void kheap_init(void) {
-    kprintf("[heap] Initializing kernel heap...\n");
-
-    heap_start = pmm_alloc_nframes(HEAP_INITIAL_PAGES);
-    if (!heap_start) {
-        klogf("[heap] Failed to allocate heap base!\n");
-        while (1) __asm__("hlt");
-    }
-
-    heap_end  = heap_start + HEAP_INITIAL_PAGES * 4096;
-    heap_curr = heap_start;
-
-    kprintf("[heap] Heap region: 0x%08x - 0x%08x (%u KiB)\n",
-            heap_start, heap_end, (heap_end - heap_start) / 1024);
+    kprintf_both("[heap] Initializing kernel heap...\n");
+    
+    heap_start = HEAP_START;
+    heap_current = heap_start;
+    heap_end = heap_start;  // Will grow on demand
+    
+    kprintf_both("[heap] Heap virtual address: 0x%08x\n", heap_start);
+    kprintf_both("[heap] Maximum size: %u MB\n", HEAP_MAX_SIZE / (1024 * 1024));
+    kprintf_both("[heap] Kernel heap initialized\n");
 }
 
-// Simple bump allocator
-void *kalloc(uint32_t size) {
-    if (heap_curr + size > heap_end) {
-        // TODO: grow heap later
-        klogf("[heap] Out of memory!\n");
-        return 0;
+void* kalloc(size_t size) {
+    if (size == 0) {
+        return NULL;
     }
-
-    void *addr = (void *)heap_curr;
-    heap_curr += (size + 7) & ~7; // align to 8 bytes
-    return addr;
+    
+    // Align to 8 bytes
+    size = (size + 7) & ~7;
+    
+    // Check if we need more pages
+    while (heap_current + size > heap_end) {
+        // Check max size
+        if (heap_end >= heap_start + HEAP_MAX_SIZE) {
+            kprintf_both("[heap] ERROR: Heap exhausted (max %u MB reached)\n",
+                  HEAP_MAX_SIZE / (1024 * 1024));
+            return NULL;
+        }
+        
+        // Allocate and map one more page
+        if (!vmm_alloc_page(heap_end, PAGE_PRESENT | PAGE_RW)) {
+            kprintf_both("[heap] ERROR: Failed to allocate page for heap\n");
+            return NULL;
+        }
+        
+        heap_end += PAGE_SIZE;
+        
+        // Log when we grow (but not too spammy)
+        static uint32_t last_log_size = 0;
+        uint32_t current_size = heap_end - heap_start;
+        if (current_size - last_log_size >= 64 * 1024) {  // Log every 64KB
+            kprintf_both("[heap] Grew to %u KB\n", current_size / 1024);
+            last_log_size = current_size;
+        }
+    }
+    
+    // Allocate from bump pointer
+    void *ptr = (void*)heap_current;
+    heap_current += size;
+    
+    return ptr;
 }
 
 void kfree(void *ptr) {
-    // no-op for now; bump allocator can't reclaim
+    // Bump allocator doesn't support freeing
+    // Not yet at least, we'll get around to it.
     (void)ptr;
 }

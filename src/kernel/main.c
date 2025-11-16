@@ -1,4 +1,6 @@
 #include <stdint.h>
+#include "drivers/fs/initramfs.h"
+#include "drivers/vfs/vfs.h"
 #include "kernel/io.h"
 #include "kernel/isr.h"
 #include "kernel/pic.h"
@@ -9,7 +11,8 @@
 #include "drivers/fs/ext2.h"
 #include "log.h"
 #include "drivers/serial/serial.h"
-#include "mm/mm.h"
+#include "mm/pmm.h"
+#include "mm/vmm.h"
 #include "idt.h"
 
 // External subsystems
@@ -103,6 +106,15 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
         goto bad_vfs;
     }
 
+    initramfs_init();
+    
+    if (vfs_mount("initramfs", NULL, "/") < 0) {
+        klogf("[bad] Failed to mount initramfs!\n");
+        goto bad_vfs;
+    }
+    
+    klogf("[ok] initramfs mounted at '/'\n");
+
     if (dummy_fs_init() < 0) {
         klogf("[fail] DummyFS init fail.\n");
         goto test_fail;
@@ -126,25 +138,25 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
 
     vmm_init();
     klogf("[vmm] Virtual Memory Management is OK.\n");
-
-    kheap_init();
-    klogf("[heap] Kernel heap as been allocated.\n");
-
-    __asm__ volatile("sti");
-
-    klogf("[cpu] Interrupts enabled via sti\n");
-
-    // Check EFLAGS
-    uint32_t eflags;
-    __asm__ volatile("pushf; pop %0" : "=r"(eflags));
-    klogf("[cpu] EFLAGS: 0x%08x\n", eflags);
-    klogf("[cpu] IF bit (bit 9): %u\n", (eflags >> 9) & 1);
-
-    if (!((eflags >> 9) & 1)) {
-        klogf("[cpu] CRITICAL: Interrupts are NOT enabled!\n");
-        klogf("sti didn't work");
-    }
-
+    //
+    // kheap_init();
+    // klogf("[heap] Kernel heap as been allocated.\n");
+    //
+    // __asm__ volatile("sti");
+    //
+    // klogf("[cpu] Interrupts enabled via sti\n");
+    //
+    // // Check EFLAGS
+    // uint32_t eflags;
+    // __asm__ volatile("pushf; pop %0" : "=r"(eflags));
+    // klogf("[cpu] EFLAGS: 0x%08x\n", eflags);
+    // klogf("[cpu] IF bit (bit 9): %u\n", (eflags >> 9) & 1);
+    //
+    // if (!((eflags >> 9) & 1)) {
+    //     klogf("[cpu] CRITICAL: Interrupts are NOT enabled!\n");
+    //     klogf("sti didn't work");
+    // }
+    //
     // This should only be jumped to after the kernel has finished everything
     // it needs to during its lifecycle
     goto hang_ok;

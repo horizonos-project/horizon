@@ -1,82 +1,159 @@
-#include <stdint.h>
+#include "vmm.h"
+#include "kernel/log.h"
+#include "pmm.h"
+#include "../libk//kprint.h"
 #include "../libk/string.h"
-#include "../libk/kprint.h"
-#include "../kernel/log.h"
 #include "../kernel/panic.h"
-#include "mm.h"
 
-static page_directory_t* kernel_page_directory = 0;
+typedef struct {
+    uint32_t entries[1024];
+} page_table_t;
 
-// Assembly helpers for enabling this at the hardware level
+typedef struct {
+    uint32_t entries[1024];
+} page_directory_t;
 
-void vmm_switch_directory(page_directory_t* dir) {
-    __asm__ volatile("mov %0, %%cr3" :: "r"(dir));
-}
+// Kernel page directory (identity-mapped)
+static page_directory_t *kernel_directory = NULL;
 
-void vmm_enable_paging(void) {
-    uint32_t cr0;
-    __asm__ volatile("mov %%cr0, %0" : "=r"(cr0));
-    cr0 |= 0x80000000;  // Set PG bit
-    __asm__ volatile("mov %0, %%cr0" :: "r"(cr0));
-}
-
-void page_fault_handler(registers_t *regs) {
-    uint32_t faulting_addr;
-    __asm__ volatile("mov %%cr2, %0" : "=r"(faulting_addr));
+// Helper: Get page table for a virtual address, creating if needed
+static page_table_t* get_page_table(uint32_t virt, bool create) {
+    uint32_t dir_index = virt >> 22;
     
-    klogf("\n=== PAGE FAULT ===\n");
-    klogf("Faulting address: 0x%08x\n", faulting_addr);
-    klogf("Error code: 0x%x\n", regs->err_code);
+    // Check if page table exists
+    if (kernel_directory->entries[dir_index] & PAGE_PRESENT) {
+        // Extract physical address of page table
+        uint32_t table_phys = kernel_directory->entries[dir_index] & ~0xFFF;
+        return (page_table_t*)table_phys;
+    }
     
-    if (!(regs->err_code & 0x1)) klogf("  Reason: Page not present\n");
-    if (regs->err_code & 0x2) klogf("  Access: Write\n");
-    else klogf("  Access: Read\n");
-    if (regs->err_code & 0x4) klogf("  Mode: User\n");
-    else klogf("  Mode: Kernel\n");
+    // Create new page table if requested
+    if (create) {
+        void *table_phys = pmm_alloc_frame();
+        if (!table_phys) {
+            panicf("[vmm] ERROR: Failed to allocate page table\n");
+            return NULL;
+        }
+        
+        // Clear the page table
+        memset((void*)table_phys, 0, sizeof(page_table_t));
+        
+        kernel_directory->entries[dir_index] = 
+            (uint32_t)table_phys | PAGE_PRESENT | PAGE_RW;
+        
+        kprintf("[vmm] Created page table at 0x%08x for virt 0x%08x\n",
+              (uint32_t)table_phys, virt);
+        
+        return (page_table_t*)table_phys;
+    }
     
-    panicf("Page fault (cannot continue)");
+    return NULL;
 }
 
 void vmm_map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
-    uint32_t dir_idx = virt >> 22;
-    uint32_t tbl_idx = (virt >> 12) & 0x3FF;
+    // Align addresses
+    virt &= ~0xFFF;
+    phys &= ~0xFFF;
+    
+    page_table_t *table = get_page_table(virt, true);
+    if (!table) {
+        kprintf("vmm_map_page: Failed to get page table for 0x%08x", virt);
+    }
+    
+    uint32_t table_index = (virt >> 12) & 0x3FF;
+    
+    table->entries[table_index] = phys | (flags & 0xFFF);
+    
+    // Invalidate TLB for this page
+    __asm__ volatile("invlpg (%0)" :: "r"(virt) : "memory");
+}
 
-    page_table_t *table;
+void vmm_unmap_page(uint32_t virt) {
+    virt &= ~0xFFF;
+    
+    page_table_t *table = get_page_table(virt, false);
+    if (!table) {
+        return;  // Not mapped
+    }
+    
+    uint32_t table_index = (virt >> 12) & 0x3FF;
+    table->entries[table_index] = 0;
+    
+    // Invalidate TLB
+    __asm__ volatile("invlpg (%0)" :: "r"(virt) : "memory");
+}
 
-    if (kernel_page_directory->entries[dir_idx] & PAGE_PRESENT) {
-        table = (page_table_t*)(kernel_page_directory->entries[dir_idx] & ~0xFFF);
-    } else {
-        table = (page_table_t*)pmm_alloc_frame();
-        if (!table)
-            panicf("Failed to allocate page table!");
+void* vmm_alloc_page(uint32_t virt, uint32_t flags) {
+    void *phys = pmm_alloc_frame();
+    if (!phys) {
+        kprintf("[vmm] ERROR: Failed to allocate physical frame\n");
+        return NULL;
+    }
+    
+    // Map the phys frame (if we have it)
+    vmm_map_page(virt, (uint32_t)phys, flags);
+    
+    return (void*)virt;
+}
 
-        memset(table, 0, sizeof(page_table_t));
-        kernel_page_directory->entries[dir_idx] =
-            ((uint32_t)table) | PAGE_PRESENT | PAGE_RW;
+void vmm_free_page(uint32_t virt) {
+    virt &= ~0xFFF;
+    
+    // Get physaddr
+    uint32_t phys = vmm_get_physical(virt);
+    if (phys == 0) {
+        return;  // Not mapped (rip)
     }
 
-    table->entries[tbl_idx] = (phys & ~0xFFF) | (flags & 0xFFF);
+    vmm_unmap_page(virt);
+
+    pmm_free_frame((void*)phys);
+}
+
+uint32_t vmm_get_physical(uint32_t virt) {
+    page_table_t *table = get_page_table(virt, false);
+    if (!table) {
+        return 0;  // Not mapped
+    }
+    
+    uint32_t table_index = (virt >> 12) & 0x3FF;
+    uint32_t entry = table->entries[table_index];
+    
+    if (!(entry & PAGE_PRESENT)) {
+        return 0;  // Not present
+    }
+    
+    // Return physical address + offset within page
+    return (entry & ~0xFFF) | (virt & 0xFFF);
+}
+
+bool vmm_is_mapped(uint32_t virt) {
+    return vmm_get_physical(virt) != 0;
 }
 
 void vmm_init(void) {
-    kprintf("[vmm] Initializing virtual memory...\n");
+    kprintf_both("[vmm], Initalizing Virtual Memory Manager...\n");
 
-    // Allocate page directory
-    kernel_page_directory = (page_directory_t*)pmm_alloc_frame();
-    if (!kernel_page_directory)
-        panicf("Failed to allocate kernel page directory!");
+    kernel_directory = (page_directory_t*)pmm_alloc_frame();
+    memset(kernel_directory, 0, sizeof(page_directory_t));
 
-    memset(kernel_page_directory, 0, sizeof(page_directory_t));
+    kprintf_both("[vmm] Identity mapping 0 -> 16 MB...\n");
 
-    // Identity map first 16 MiB (enough for kernel + heap)
-    // We may need more later, this is fine for now
-    for (uint32_t addr = 0; addr < 16 * 1024 * 1024; addr += PAGE_SIZE)
+    for (uint32_t addr = 0; addr < 16 * 1024 * 1024; addr += PAGE_SIZE) {
         vmm_map_page(addr, addr, PAGE_PRESENT | PAGE_RW);
+    }
 
-    // Load page directory into CR3 and enable paging
-    vmm_switch_directory(kernel_page_directory);
-    vmm_enable_paging();
+    kprintf_both("[vmm] Identity mapping complete!\n");
 
-    kprintf("[vmm] Paging enabled.\n");
+    // Load page directory into CR3
+    __asm__ volatile("mov %0, %%cr3" :: "r"(kernel_directory) : "memory");
+    
+    // Enable paging (set PG bit in CR0)
+    uint32_t cr0;
+    __asm__ volatile("mov %%cr0, %0" : "=r"(cr0));
+    cr0 |= 0x80000000;
+    __asm__ volatile("mov %0, %%cr0" :: "r"(cr0) : "memory");
+    
+    klogf("[vmm] Paging enabled (CR0.PG set)\n");
+    klogf("[vmm] Virtual Memory Manager initialized\n");
 }
-

@@ -6,6 +6,9 @@
 # Build directory
 build/
 
+# initramfs directory
+initramfs/
+
 # Hidden by default files
 *.swp
 *.suo
@@ -35,6 +38,7 @@ build/
 *.S
 *.a
 *.so
+*.o
 
 # Very specific files
 compile_commands.json

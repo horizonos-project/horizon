@@ -44,12 +44,14 @@ ISO 	:= $(BUILD)/Horizon.iso
 KERNEL 	:= $(BUILD)/kernel.elf
 LINKER	:= $(SRC_D)/kernel/linker.ld
 
+
 # -----------------------------------------------------------------------------
 # Source discovery (which is super helpful)
 # -----------------------------------------------------------------------------
 BOOT_SRC	:= $(SRC_D)/boot/boot.asm $(SRC_D)/kernel/isr_stubs.asm $(SRC_D)/kernel/syscall/syscall_asm.asm
 LIBK_SRC	:= $(shell find $(SRC_D)/libk -type f -name '*.c' 2>/dev/null)
 KERNEL_SRC 	:= $(shell find $(SRC_D) -type f -name '*.c' -not -path "$(SRC_D)/libk/*" 2>/dev/null)
+INITRAMFS	:= build/initramfs.o
 
 # The many iterations of this src only to learn that I needed to rename isr.asm 
 # KERNEL_SRC 	:= $(shell find $(SRC_D)/kernel $(SRC_D)/mm $(SRC_D)/drivers -type f -name '*.c' 2>/dev/null)
@@ -61,7 +63,7 @@ BOOT_OBJS   := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(BOOT_SRC:.asm=.o))
 KERNEL_OBJS := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(KERNEL_SRC:.c=.o))
 LIBK_OBJS	:= $(patsubst $(SRC_D)/%, $(BUILD)/%, $(LIBK_SRC:.c=.o))
 LIBK_A		:= $(BUILD)/libk/libk.a
-OBJS        := $(BOOT_OBJS) $(LIBK_OBJS) $(KERNEL_OBJS)
+OBJS        := $(BOOT_OBJS) $(LIBK_OBJS) $(KERNEL_OBJS) $(INITRAMFS)
 
 # -----------------------------------------------------------------------------
 # Flags (optimized for pedantic compiling, legacy asm instructions and 32 bit)
@@ -141,6 +143,16 @@ $(KERNEL): $(OBJS)
 
 libk: $(LIBK_A)
 	@printf "$(GREEN)[OK!]$(RESET) libk.a built successfully.\n"
+
+$(INITRAMFS): initramfs.tar
+	@printf "$(BLUE)[INITRAMFS]$(RESET) Creating initramfs object\n"
+	$(Q)i686-elf-objcopy -I binary -O elf32-i386 -B i386 \
+		--rename-section .data=.initramfs,alloc,load,readonly,data,contents \
+		initramfs.tar $@
+
+initramfs.tar: build_initramfs.sh
+	@printf "$(BLUE)[TAR]$(RESET) Building initramfs\n"
+	$(Q)./build_initramfs.sh
 
 # -----------------------------------------------------------------------------
 # Targets
