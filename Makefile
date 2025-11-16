@@ -169,25 +169,27 @@ iso: $(KERNEL)
 run: raw
 	@clear
 	@printf "$(BLUE)[RUN]$(RESET) Running kernel in qemu-system-i386...\n"
-	@qemu-system-i386 -kernel $(KERNEL) -m 128M \
+	@qemu-system-i386 -enable-kvm -kernel $(KERNEL) -m 128M \
 		-serial stdio -display default \
 		-no-reboot -no-shutdown
 
 run-iso: iso
 	@clear
 	@printf "$(BLUE)[RUN]$(RESET) Running ISO fin qemu-system-i386...\n"
-	@qemu-system-i386 -cdrom $(ISO) -m 128M \
+	@qemu-system-i386 -enable-kvm -cdrom $(ISO) -m 128M \
 	-serial stdio -display default \
 	-no-reboot -no-shutdown
 
 debug: raw
 	@printf "$(BLUE)[DBG]$(RESET) Debugging kernel in qemu-system-i386...\n"
-	@qemu-system-i386 -kernel $(KERNEL) -s -S -m 128M \
+	@qemu-system-i386 -enable-kvm -kernel $(KERNEL) -s -S -m 128M \
 		-serial stdio -display default \
 		-no-reboot -no-shutdown
 
 clean:
 	@rm -rf $(BUILD)
+	@rm -rf $(ISO)
+	@rm -rf ./initramfs.*
 	@printf "$(RED)[CLEAN]$(RESET) Build artifacts removed\n"
 
 rebuild: clean all
