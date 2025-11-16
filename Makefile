@@ -187,6 +187,7 @@ debug: raw
 		-no-reboot -no-shutdown
 
 clean:
+	@rm -rf ./initramfs.*
 	@rm -rf $(BUILD)
 	@printf "$(RED)[CLEAN]$(RESET) Build artifacts removed\n"
 
