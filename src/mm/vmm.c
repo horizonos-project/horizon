@@ -132,7 +132,7 @@ bool vmm_is_mapped(uint32_t virt) {
 }
 
 void vmm_init(void) {
-    kprintf_both("[vmm], Initalizing Virtual Memory Manager...\n");
+    kprintf_both("[vmm] Initalizing Virtual Memory Manager...\n");
 
     kernel_directory = (page_directory_t*)pmm_alloc_frame();
     memset(kernel_directory, 0, sizeof(page_directory_t));

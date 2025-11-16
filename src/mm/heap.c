@@ -69,3 +69,11 @@ void kfree(void *ptr) {
     // Not yet at least, we'll get around to it.
     (void)ptr;
 }
+
+uint32_t kheap_get_used(void) {
+    return heap_current - heap_start;
+}
+
+uint32_t kheap_get_size(void) {
+    return heap_end - heap_start;
+}

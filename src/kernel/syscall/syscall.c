@@ -16,11 +16,18 @@ void syscall_register(uint8_t num, syscall_t func) {
     syscalls[num] = func;
 }
 
-// STUB: FINISH ASAP.
+// Expand as needed since there's many many syscalls
 void syscall_register_all(void) {
-    syscall_register(SYS_EXIT, sys_exit);
-    syscall_register(SYS_GETPID, sys_getpid);
-    syscall_register(SYS_WRITE, sys_write);
+    syscall_register(SYS_EXIT,      sys_exit);
+    syscall_register(SYS_GETPID,    sys_getpid);
+    syscall_register(SYS_WRITE,     sys_write);
+    syscall_register(SYS_READ,      sys_read);
+    syscall_register(SYS_OPEN,      sys_open);
+    syscall_register(SYS_CLOSE,     sys_close);
+    syscall_register(SYS_FORK,      sys_fork);
+    syscall_register(SYS_EXECVE,    sys_execve);
+    syscall_register(SYS_BRK,       sys_brk);
+    syscall_register(SYS_ALARM,     sys_alarm);
 }
 
 void syscall_init(void) {

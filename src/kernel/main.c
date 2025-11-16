@@ -11,8 +11,7 @@
 #include "drivers/fs/ext2.h"
 #include "log.h"
 #include "drivers/serial/serial.h"
-#include "mm/pmm.h"
-#include "mm/vmm.h"
+#include "mm/mm.h"
 #include "idt.h"
 
 // External subsystems
@@ -68,6 +67,44 @@ no_mb_mem_info:
     while (1) { __asm__ volatile("hlt"); }
 }
 
+void test_heap(void) {
+    klogf("\n[test] ===== Testing Heap =====\n");
+    
+    // Test 1: Small allocation
+    void *ptr1 = kalloc(64);
+    klogf("[test] kalloc(64) = 0x%08x\n", (uint32_t)ptr1);
+    
+    if (ptr1) {
+        *(uint32_t*)ptr1 = 0xCAFEBABE;
+        klogf("[test] Wrote 0xCAFEBABE, read: 0x%08x\n", *(uint32_t*)ptr1);
+    }
+    
+    // Test 2: Medium allocation
+    void *ptr2 = kalloc(1024);
+    klogf("[test] kalloc(1024) = 0x%08x\n", (uint32_t)ptr2);
+    
+    if (ptr2) {
+        *(uint32_t*)ptr2 = 0xDEADBEEF;
+        klogf("[test] Wrote 0xDEADBEEF, read: 0x%08x\n", *(uint32_t*)ptr2);
+    }
+    
+    // Test 3: Large allocation (triggers multiple page allocations)
+    void *ptr3 = kalloc(32 * 1024);  // 32 KB
+    klogf("[test] kalloc(32768) = 0x%08x\n", (uint32_t)ptr3);
+    
+    if (ptr3) {
+        *(uint32_t*)ptr3 = 0xBADC0FFE;
+        klogf("[test] Wrote 0xBADC0FFE, read: 0x%08x\n", *(uint32_t*)ptr3);
+    }
+    
+    klogf("[test] Heap used: %u KB of %u KB\n", 
+          kheap_get_used() / 1024, kheap_get_size() / 1024);
+    
+    pmm_dump_stats();
+    
+    klogf("[test] ===== Heap Test Complete =====\n\n");
+}
+
 void kmain(uint32_t magic, uint32_t mb_info_addr) {
     serial_init();
     kclear();
@@ -115,13 +152,6 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     
     klogf("[ok] initramfs mounted at '/'\n");
 
-    if (dummy_fs_init() < 0) {
-        klogf("[fail] DummyFS init fail.\n");
-        goto test_fail;
-    }
-
-    klogf("[ok] DummyFS initalized.\n");
-
     if (ext2_register() < 0) {
         klogf("[fail] ext2 registration failed.\n");
         goto bad_ext2_fs;
@@ -138,9 +168,11 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
 
     vmm_init();
     klogf("[vmm] Virtual Memory Management is OK.\n");
-    //
-    // kheap_init();
-    // klogf("[heap] Kernel heap as been allocated.\n");
+    
+    kheap_init();
+    klogf("[heap] Kernel heap as been allocated.\n");
+
+    test_heap();
     
     __asm__ volatile("sti");
     

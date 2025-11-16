@@ -169,7 +169,7 @@ iso: $(KERNEL)
 run: raw
 	@clear
 	@printf "$(BLUE)[RUN]$(RESET) Running kernel in qemu-system-i386...\n"
-	@qemu-system-i386 -enable-kvm -kernel $(KERNEL) -m 128M \
+	@qemu-system-i386 -kernel $(KERNEL) -m 128M \
 		-serial stdio -display default \
 		-no-reboot -no-shutdown
 

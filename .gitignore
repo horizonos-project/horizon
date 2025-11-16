@@ -38,7 +38,7 @@ initramfs/
 *.S
 *.a
 *.so
-initrmfs.o
+initrmfs.*
 
 # Very specific files
 compile_commands.json
