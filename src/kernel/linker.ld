@@ -21,11 +21,14 @@ SECTIONS
         *(COMMON)
     }
 
+    kernel_end = .;
+
+    . = ALIGN(4K);
+    . = 2M;
+
     .initramfs ALIGN(4096) : {
         initramfs_start = .;
         *(.initramfs)
         initramfs_end = .;
     }
-
-    kernel_end = .;
 }

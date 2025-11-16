@@ -10,7 +10,7 @@ if [ -f userland/hello.asm ]; then
 fi
 
 cd initramfs
-tar -cf ../initramfs.tar *
+tar --format=ustar --exclude='._*' --exclude='.DS_Store' -cf ../initramfs.tar *
 cd ..
 
 i686-elf-objcopy -I binary -O elf32-i386 -B i386 \
