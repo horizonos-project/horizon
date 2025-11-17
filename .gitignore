@@ -35,7 +35,6 @@ initramfs/
 
 # Libraries and other compiler leftovers
 *.s
-*.S
 *.a
 *.so
 initramfs.*
