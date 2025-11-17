@@ -14,6 +14,7 @@
 #include "mm/mm.h"
 #include "idt.h"
 #include "gdt.h"
+#include "tss.h"
 
 // External subsystems
 extern int vfs_init(void);
@@ -26,6 +27,7 @@ extern void kheap_init(void);
 extern void *kalloc(uint32_t size);
 extern void kfree(void *ptr);
 
+// This is potentially no longer *needed* but keep it around just in case.
 void dump_eflags(const char *msg) {
     uint32_t eflags;
     __asm__ volatile("pushf; pop %0" : "=r"(eflags));
@@ -180,8 +182,18 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     
     kheap_init();
     klogf("[heap] Kernel heap as been allocated.\n");
-
     test_heap();
+
+    uint32_t k_stack = (uint32_t)kalloc(4096);
+    if (!k_stack) {
+        kprintf_both("[kernel] FATAL: Failed to alloc kernel stack!\n");
+        goto bad_kalloc;
+    }
+
+    k_stack += 4096;
+
+    kprintf_both("[kernel] Allocated kernel stack at 0x%08x\n", k_stack);
+    tss_install(k_stack);
     
     dump_eflags("[cpu] Before sti\n");
     __asm__ volatile("sti");
@@ -199,6 +211,8 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
         klogf("[cpu] CRITICAL: Interrupts are NOT enabled!\n");
         klogf("sti didn't work");
     }
+
+    kprintf_both("[ring3] The kernel is now ready for ring3 operations.\n");
 
     // This should only be jumped to after the kernel has finished everything
     // it needs to during its lifecycle
@@ -232,6 +246,11 @@ bad_vfs:
     klogf("System is in a halting state! (VFS BAD)\n");
     kprintf("\nSystem failed to initalize the VFS.\n");
     kprintf("The system has been halted to prevent damage to the machine.\n");
+    goto hang;
+
+bad_kalloc:
+    kprintf_both("System is halting! (KALLOC FAILURE)\n");
+    kprintf_both("System halted to prevent damages.\n");
     goto hang;
 
 hang:
