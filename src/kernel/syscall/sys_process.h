@@ -17,9 +17,11 @@ uint32_t sys_exit(uint32_t status, uint32_t u2, uint32_t u3, uint32_t u4, uint32
     // - close fd(s)
     // - switch to next proc
 
-    kprintf("Process exited with code %u\n", status);
-    kprintf("System has been halted. (We don't have a scheduler)\n");
-    while (1) { __asm__ volatile("hlt"); }
+    kprintf_both("Process exited with code %u\n", status);
+    kprintf_both("System has been halted. (We don't have a scheduler)\n");
+    while (1) { 
+        __asm__ volatile("hlt");
+    }
 
     return 0; // We will never get here
 }
