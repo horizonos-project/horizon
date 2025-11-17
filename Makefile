@@ -35,6 +35,12 @@ else
 	OBJC 	:= i686-elf-objcopy
 endif
 
+ifeq ($(shell uname -s),Darwin)
+	RESCUE = i686-elf-grub-mkrescue
+else
+	RESCUE = grub-mkrescue
+endif
+
 # -----------------------------------------------------------------------------
 # Paths
 # -----------------------------------------------------------------------------
@@ -49,6 +55,7 @@ LINKER	:= $(SRC_D)/kernel/linker.ld
 # Source discovery (which is super helpful)
 # -----------------------------------------------------------------------------
 BOOT_SRC	:= $(SRC_D)/boot/boot.asm $(SRC_D)/kernel/isr_stubs.asm $(SRC_D)/kernel/syscall/syscall_asm.asm
+BOOT_SRC	+= src/kernel/gdt_asm.asm
 LIBK_SRC	:= $(shell find $(SRC_D)/libk -type f -name '*.c' 2>/dev/null)
 KERNEL_SRC 	:= $(shell find $(SRC_D) -type f -name '*.c' -not -path "$(SRC_D)/libk/*" 2>/dev/null)
 INITRAMFS	:= build/initramfs.o
@@ -164,7 +171,7 @@ iso: $(KERNEL)
 	@mkdir -p $(BUILD)/iso/boot/grub
 	@cp $(KERNEL) $(BUILD)/iso/boot/kernel.elf
 	@cp ./grub.cfg $(BUILD)/iso/boot/grub/
-	@grub-mkrescue -o $(ISO) $(BUILD)/iso
+	@$(RESCUE) -o $(ISO) $(BUILD)/iso
 
 run: raw
 	@clear
@@ -176,13 +183,13 @@ run: raw
 run-iso: iso
 	@clear
 	@printf "$(BLUE)[RUN]$(RESET) Running ISO fin qemu-system-i386...\n"
-	@qemu-system-i386 -enable-kvm -cdrom $(ISO) -m 128M \
+	@qemu-system-i386 -cdrom $(ISO) -m 128M \
 	-serial stdio -display default \
 	-no-reboot -no-shutdown
 
 debug: raw
 	@printf "$(BLUE)[DBG]$(RESET) Debugging kernel in qemu-system-i386...\n"
-	@qemu-system-i386 -enable-kvm -kernel $(KERNEL) -s -S -m 128M \
+	@qemu-system-i386 -kernel $(KERNEL) -s -S -m 128M \
 		-serial stdio -display default \
 		-no-reboot -no-shutdown
 

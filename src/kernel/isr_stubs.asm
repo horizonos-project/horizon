@@ -110,11 +110,11 @@ isr_common_stub:
     push fs
     push gs
 
-    mov ax, 0x10        ; kernel data selector (assumes 0x10)
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
+    ; mov ax, 0x10        ; kernel data selector (assumes 0x10)
+    ; mov ds, ax
+    ; mov es, ax
+    ; mov fs, ax
+    ; mov gs, ax
 
     mov eax, esp        ; regs_t* argument
     push eax
@@ -129,7 +129,7 @@ isr_common_stub:
     popa
 
     add esp, 8          ; drop int_no + err_code
-    sti
+    
     iretd
 
 ; I cannot believe we got this close to userland without this
@@ -141,11 +141,11 @@ irq_common_stub:
     push fs
     push gs
 
-    mov ax, 0x10
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
+    ; mov ax, 0x10
+    ; mov ds, ax
+    ; mov es, ax
+    ; mov fs, ax
+    ; mov gs, ax
 
     mov eax, esp
     push eax
@@ -159,5 +159,5 @@ irq_common_stub:
     popa
 
     add esp, 8
-    sti
+    
     iretd

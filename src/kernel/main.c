@@ -13,6 +13,7 @@
 #include "drivers/serial/serial.h"
 #include "mm/mm.h"
 #include "idt.h"
+#include "gdt.h"
 
 // External subsystems
 extern int vfs_init(void);
@@ -24,6 +25,13 @@ extern void serial_puts(const char *s);
 extern void kheap_init(void);
 extern void *kalloc(uint32_t size);
 extern void kfree(void *ptr);
+
+void dump_eflags(const char *msg) {
+    uint32_t eflags;
+    __asm__ volatile("pushf; pop %0" : "=r"(eflags));
+    kprintf_both("%s: EFLAGS=0x%08x IF=%u\n",
+            msg, eflags, (eflags >> 9) & 1);
+}
 
 // Display Multiboot info during boot
 void display_mb_info(multiboot_info_t *mb) {
@@ -122,6 +130,7 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     klogf("[ok] VGA/Serial ready.\n");
 
     idt_init();
+    gdt_install();
     isr_install();
     irq_install();
     syscall_init();
@@ -174,7 +183,9 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
 
     test_heap();
     
+    dump_eflags("[cpu] Before sti\n");
     __asm__ volatile("sti");
+    dump_eflags("[cpu] After sti\n");
     
     klogf("[cpu] Interrupts enabled via sti\n");
     
