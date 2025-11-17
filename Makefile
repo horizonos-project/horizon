@@ -9,7 +9,7 @@ YELLOW   := \033[1;33m
 RED      := \033[1;31m
 RESET    := \033[0m
 
-VERSION     := 0.02.06
+VERSION     := 0.03.00
 BUILD_DATE  := $(shell date +'%Y-%m-%d_%H:%M:%S')
 
 # -----------------------------------------------------------------------------
@@ -30,7 +30,7 @@ ifeq ($(OS),Windows_NT)
 else
 	CC 		:= i686-elf-gcc
 	LD 		:= i686-elf-ld
-	AS 		:= nasm
+	AS 		:= i686-elf-as
 	AR		:= i686-elf-ar
 	OBJC 	:= i686-elf-objcopy
 endif
@@ -54,8 +54,8 @@ LINKER	:= $(SRC_D)/kernel/linker.ld
 # -----------------------------------------------------------------------------
 # Source discovery (which is super helpful)
 # -----------------------------------------------------------------------------
-BOOT_SRC	:= $(SRC_D)/boot/boot.asm $(SRC_D)/kernel/isr_stubs.asm $(SRC_D)/kernel/syscall/syscall_asm.asm
-BOOT_SRC	+= src/kernel/gdt_asm.asm
+BOOT_SRC	:= $(SRC_D)/boot/boot.S $(SRC_D)/kernel/isr_stubs.S $(SRC_D)/kernel/syscall/syscall_asm.S
+BOOT_SRC	+= src/kernel/gdt_asm.S
 LIBK_SRC	:= $(shell find $(SRC_D)/libk -type f -name '*.c' 2>/dev/null)
 KERNEL_SRC 	:= $(shell find $(SRC_D) -type f -name '*.c' -not -path "$(SRC_D)/libk/*" 2>/dev/null)
 INITRAMFS	:= build/initramfs.o
@@ -66,7 +66,7 @@ INITRAMFS	:= build/initramfs.o
 # KERNEL_SRC 	:= $(shell find $(SRC_D) -type f -name '*.c' ! -path "$(SRC_D)/libk/*" 2>/dev/null)
 # KERNEL_SRC	:= $(shell find $(SRC_D) -type f -name '*.c' ! -path "$(SRC_D)/libk/*")
 
-BOOT_OBJS   := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(BOOT_SRC:.asm=.o))
+BOOT_OBJS   := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(BOOT_SRC:.S=.o))
 KERNEL_OBJS := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(KERNEL_SRC:.c=.o))
 LIBK_OBJS	:= $(patsubst $(SRC_D)/%, $(BUILD)/%, $(LIBK_SRC:.c=.o))
 LIBK_A		:= $(BUILD)/libk/libk.a
@@ -113,13 +113,13 @@ $(BUILD):
 	$(Q)mkdir -pv $(BUILD)
 
 # Assemble boot sources
-$(BUILD)/%.o: $(SRC_D)/%.asm
+$(BUILD)/%.o: $(SRC_D)/%.S
 	$(Q)mkdir -p $(@D)
 	@printf "$(BLUE)[ASM]$(RESET) %s\n" "$<"
-	$(Q)$(AS) -f elf32 $< -o $@ 2> build/last_build.log || { \
+	$(Q)$(AS) --32 $< -o $@ 2> build/last_build.log || { \
 		printf "$(RED)[ERR]$(RESET) %s failed:\n" "$<"; \
 		cat build/last_build.log; \
-		$(AS) -f elf32 $< -o $@; exit 1; }
+		exit 1; }
 
 
 # Compile C sources
@@ -147,6 +147,7 @@ $(KERNEL): $(OBJS)
 		cat build/last_build.log; \
 		$(LD) $(LDFLAGS) -o $@ $^; exit 1; }
 	@printf "$(GREEN)[OK!]$(RESET) Kernel linked -> $(KERNEL)\n"
+	@rm -f *.tar
 
 libk: $(LIBK_A)
 	@printf "$(GREEN)[OK!]$(RESET) libk.a built successfully.\n"

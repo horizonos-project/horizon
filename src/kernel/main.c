@@ -5,6 +5,7 @@
 #include "kernel/isr.h"
 #include "kernel/pic.h"
 #include "kernel/syscall/syscall.h"
+#include "kernel/usermode.h"
 #include "multiboot.h"
 #include "libk/kprint.h"
 #include "drivers/video/vga.h"
@@ -213,6 +214,29 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     }
 
     kprintf_both("[ring3] The kernel is now ready for ring3 operations.\n");
+
+    void *user_stack_frame = pmm_alloc_frame();
+    if (!user_stack_frame) {
+        kprintf_both("[kernel] Failed to allocate user stack frame!\n");
+        goto bad_kalloc;
+    }
+
+    uint32_t user_stack_phys = (uint32_t)user_stack_frame;
+    uint32_t user_stack_virt = 0x00800000;
+
+    klogf("[ring3] Allocating user stack:\n");
+    klogf("[ring3]   Physical: 0x%08x\n", user_stack_phys);
+    klogf("[ring3]   Virtual:  0x%08x\n", user_stack_virt);
+
+    // Map it as user-accessible
+    vmm_map_page(user_stack_virt, user_stack_phys, PAGE_PRESENT | PAGE_RW | PAGE_USER);
+
+    // Stack grows down, so pass top of page
+    uint32_t user_stack_top = user_stack_virt + 4096;
+
+    klogf("[ring3]   Stack top: 0x%08x\n", user_stack_top);
+
+    jump_to_elf("/bin/hello");
 
     // This should only be jumped to after the kernel has finished everything
     // it needs to during its lifecycle

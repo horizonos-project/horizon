@@ -17,7 +17,7 @@ typedef struct {
 static page_directory_t *kernel_directory = NULL;
 
 // Helper: Get page table for a virtual address, creating if needed
-static page_table_t* get_page_table(uint32_t virt, bool create) {
+static page_table_t* get_page_table(uint32_t virt, bool create, uint32_t flags) {
     uint32_t dir_index = virt >> 22;
     
     // Check if page table exists
@@ -38,11 +38,15 @@ static page_table_t* get_page_table(uint32_t virt, bool create) {
         // Clear the page table
         memset((void*)table_phys, 0, sizeof(page_table_t));
         
-        kernel_directory->entries[dir_index] = 
-            (uint32_t)table_phys | PAGE_PRESENT | PAGE_RW;
+        uint32_t pde_flags = PAGE_PRESENT | PAGE_RW;
+        if (flags & PAGE_USER) {
+            pde_flags |= PAGE_USER;
+        }
         
-        kprintf("[vmm] Created page table at 0x%08x for virt 0x%08x\n",
-              (uint32_t)table_phys, virt);
+        kernel_directory->entries[dir_index] = (uint32_t)table_phys | pde_flags;
+        
+        kprintf("[vmm] Created page table at 0x%08x for virt 0x%08x (flags: 0x%x)\n",
+              (uint32_t)table_phys, virt, pde_flags);
         
         return (page_table_t*)table_phys;
     }
@@ -55,7 +59,7 @@ void vmm_map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
     virt &= ~0xFFF;
     phys &= ~0xFFF;
     
-    page_table_t *table = get_page_table(virt, true);
+    page_table_t *table = get_page_table(virt, true, flags);
     if (!table) {
         kprintf("vmm_map_page: Failed to get page table for 0x%08x", virt);
     }
@@ -71,7 +75,7 @@ void vmm_map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
 void vmm_unmap_page(uint32_t virt) {
     virt &= ~0xFFF;
     
-    page_table_t *table = get_page_table(virt, false);
+    page_table_t *table = get_page_table(virt, false, 0);
     if (!table) {
         return;  // Not mapped
     }
@@ -111,7 +115,7 @@ void vmm_free_page(uint32_t virt) {
 }
 
 uint32_t vmm_get_physical(uint32_t virt) {
-    page_table_t *table = get_page_table(virt, false);
+    page_table_t *table = get_page_table(virt, false, 0);
     if (!table) {
         return 0;  // Not mapped
     }
@@ -140,7 +144,7 @@ void vmm_init(void) {
     kprintf_both("[vmm] Identity mapping 0 -> 16 MB...\n");
 
     for (uint32_t addr = 0; addr < 16 * 1024 * 1024; addr += PAGE_SIZE) {
-        vmm_map_page(addr, addr, PAGE_PRESENT | PAGE_RW);
+        vmm_map_page(addr, addr, PAGE_PRESENT | PAGE_RW | PAGE_USER);
     }
 
     kprintf_both("[vmm] Identity mapping complete!\n");

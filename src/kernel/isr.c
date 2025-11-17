@@ -104,8 +104,30 @@ void isr_handler(regs_t* r)
 {
     uint32_t int_no = r->int_no;
 
+    if (int_no == 14) {  // Page fault specific error
+        uint32_t faulting_addr;
+        __asm__ volatile("mov %%cr2, %0" : "=r"(faulting_addr));
+        
+        klogf("[exc] PAGE FAULT at EIP=0x%08x\n", r->eip);
+        klogf("[exc] Faulting address: 0x%08x\n", faulting_addr);
+        klogf("[exc] Error code: 0x%08x ", r->err_code);
+        
+        if (r->err_code & 0x01) klogf("(present) ");
+        else klogf("(not-present) ");
+        
+        if (r->err_code & 0x02) klogf("(write) ");
+        else klogf("(read) ");
+        
+        if (r->err_code & 0x04) klogf("(user-mode) ");
+        else klogf("(supervisor) ");
+        
+        klogf("\n");
+        
+        for(;;);  // Halt
+    }
+
     if (int_no < 32) {
-        kprintf("[exc] CPU exception %u at EIP=0x%08x\n",
+        klogf("[exc] CPU exception %u at EIP=0x%08x\n",
                 int_no, r->eip);
         return;
     }
