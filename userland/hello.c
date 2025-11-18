@@ -1,8 +1,5 @@
 // This is a hello program that exists in Horizon's userland
 // This is just a test binary, don't mind it :P
-// userspace/hello.c - Advanced version
-
-// Syscall numbers (should match kernel)
 #define SYS_EXIT   1
 #define SYS_WRITE  4
 #define SYS_GETPID 20

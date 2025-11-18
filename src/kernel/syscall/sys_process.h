@@ -4,6 +4,7 @@
 #include "../../libk/kprint.h"
 #include "../../drivers/video/vga.h"
 #include "../../drivers/serial/serial.h"
+#include "mm/mm.h"
 
 uint32_t sys_exit(uint32_t status, uint32_t u2, uint32_t u3, uint32_t u4, uint32_t u5) {
     // Immediately dumping all of this for just the status
@@ -172,38 +173,77 @@ uint32_t sys_execve(uint32_t filename, uint32_t argv, uint32_t envp, uint32_t u4
 }
 
 uint32_t sys_brk(uint32_t addr, uint32_t u2, uint32_t u3, uint32_t u4, uint32_t u5) {
-    (void)u2; (void)u3; (void)u4; (void)u5;
-    
+    static uint32_t heap_start = 0;
     static uint32_t current_brk = 0;
-    
-    // Initialize brk on first call
+
+    // Init on first call
     if (current_brk == 0) {
-        // Set initial program break (I think this is right)
-        current_brk = 0x40000000;
-        klogf("[syscall] sys_brk: initialized to 0x%x\n", current_brk);
+        heap_start = 0x40000000;
+        current_brk = heap_start;
+        klogf("[brk] Initalized heap at 0x%x", heap_start);
     }
-    
-    // If addr is 0, just return current brk
+
+    // Query current brk
     if (addr == 0) {
         return current_brk;
     }
-    
-    // TODO: Validate the new address:
-    // - Must be above initial brk
-    // - Must not overlap with stack
-    // - Must be page-aligned (or align it)
-    
-    klogf("[syscall] sys_brk: requested 0x%x, current 0x%x\n", addr, current_brk);
-    
-    // For now, just accept any reasonable request
-    if (addr > current_brk) {
-        // Growing heap - would need to allocate pages
-        klogf("[syscall] sys_brk: growing heap (TODO: allocate pages)\n");
-    } else if (addr < current_brk) {
-        // Shrinking heap - would need to free pages
-        klogf("[syscall] sys_brk: shrinking heap (TODO: free pages)\n");
+
+    // Validate the request
+    if (addr < heap_start) {
+        klogf("[brk] Request 0x%x is below heap start!\n", addr);
+        return current_brk;
     }
-    
+
+    // TODO: Check against stack once we have per-process stacks
+
+    uint32_t old_brk_aligned = (current_brk + 0xFFF) & ~0xFFF;
+    uint32_t new_brk_aligned = (addr + 0xFFF) & ~0xFFF;
+
+    if (new_brk_aligned > old_brk_aligned) {
+        // Growing heap - allocate pages
+        uint32_t num_pages = (new_brk_aligned - old_brk_aligned) / 0x1000;
+        
+        klogf("[brk] Growing heap by %u pages\n", num_pages);
+        
+        for (uint32_t i = 0; i < num_pages; i++) {
+            uint32_t vaddr = old_brk_aligned + (i * 0x1000);
+            void *phys_page = pmm_alloc_frame();
+            
+            if (!phys_page) {
+                klogf("[brk] Failed to allocate page!\n");
+                return current_brk;
+            }
+            
+            // Map page into current address space
+            // Flags: Present, User, Read/Write
+            vmm_map_page(vaddr, (uint32_t)phys_page, 
+                     PAGE_PRESENT | PAGE_USER | PAGE_RW);
+        }
+    }
+    else if (new_brk_aligned < old_brk_aligned) {
+        // Oh hey we can shrink the heap!
+        uint32_t num_pages = (old_brk_aligned - new_brk_aligned) / 0x1000;
+
+        for (uint32_t i = 0; i < num_pages; i++) {
+            uint32_t vaddr = new_brk_aligned + (i * 0x1000);
+            
+            // Get physical address and free it
+            uint32_t phys_addr = vmm_get_physical(vaddr);
+            if (phys_addr) {
+                pmm_mark_free((void*)phys_addr);
+            }
+            
+            // Unmap the page
+            vmm_unmap_page(vaddr);
+        }
+
+        __asm__ volatile(
+            "mov %%cr3, %%eax"
+            "mov %%eax, %%cr3"
+            : : : "eax"
+        );
+    }
+
     current_brk = addr;
     return current_brk;
 }
