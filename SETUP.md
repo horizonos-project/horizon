@@ -7,8 +7,7 @@ To set up HorizonOS for use in an emulator such as qemu (recommended) or on actu
 
 | Tool | Version | Notes |
 | ---- | ------- | ----- |
-| GCC     | $\geq$ 11.2.0   | Compiler for C             |
-| NASM    | $\geq$ 2.16.01  | Intel-compatible assembler |
+| GCC     | $\geq$ 11.2.0   | Compiler and Assembler     |
 | make    | $\geq$ 4.3      | Build system               |
 | grub    | latest          | Required for mkrescue      |
 | xorriso | latest          | ISO 9660 writer            |
