@@ -5,6 +5,7 @@
 
 #include "ata.h"
 #include "kernel/io.h"
+#include "kernel/log.h"
 #include "libk/kprint.h"
 #include "libk/string.h"
 

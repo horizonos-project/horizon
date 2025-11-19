@@ -36,4 +36,7 @@ partition_entry_t *mbr_find_ext2(partition_entry_t *partitions) {
             return &partitions[i];
         }
     }
+
+    klogf("[mbr] Could not find partitions!\n");
+    for (;;);
 }
