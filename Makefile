@@ -198,7 +198,7 @@ clean:
 	@rm -rf ./initramfs.*
 	@rm -rf $(BUILD)
 	@rm -rf $(ISO)
-	@rm -rf ./initramfs.*
+	@rm -rf hello
 	@printf "$(RED)[CLEAN]$(RESET) Build artifacts removed\n"
 
 rebuild: clean all

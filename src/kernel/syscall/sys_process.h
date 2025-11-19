@@ -1,9 +1,9 @@
 #include <stddef.h>
+#include <stdint.h>
 #include "kernel/log.h"
-#include "syscall.h"
-#include "../../libk/kprint.h"
 #include "../../drivers/video/vga.h"
 #include "../../drivers/serial/serial.h"
+#include "../../drivers/vfs/vfs.h"
 #include "mm/mm.h"
 
 uint32_t sys_exit(uint32_t status, uint32_t u2, uint32_t u3, uint32_t u4, uint32_t u5) {
@@ -38,7 +38,6 @@ uint32_t sys_getpid(uint32_t u1, uint32_t u2, uint32_t u3, uint32_t u4, uint32_t
 uint32_t sys_write(uint32_t fd, uint32_t buf, uint32_t count, uint32_t u4, uint32_t u5) {
     (void)u4; (void)u5;
     
-    // Validate pointer (basic check)
     if (buf == 0) {
         klogf("[syscall] sys_write: NULL buffer\n");
         return -1;  // EFAULT
@@ -54,10 +53,16 @@ uint32_t sys_write(uint32_t fd, uint32_t buf, uint32_t count, uint32_t u4, uint3
         }
         return count;  // Success: wrote all bytes
     }
+
+    // TODO: Once we have writable filesystems, add this:
+    // int bytes_written = vfs_write(fd, str, count);
+    // if (bytes_written < 0) {
+    //     klogf("[syscall] sys_write: vfs_write failed\n");
+    //     return -1;
+    // }
+    // return bytes_written;
     
-    // TODO: Handle file writes via VFS
-    
-    klogf("[syscall] sys_write: invalid fd %u\n", fd);
+    klogf("[syscall] sys_write: file writes not yet implemented\n");
     return -1;  // EBADF (bad file descriptor)
 }
 
@@ -74,20 +79,28 @@ uint32_t sys_read(uint32_t fd, uint32_t buf, uint32_t count, uint32_t u4, uint32
     
     // Handle stdin (fd 0)
     if (fd == 0) {
-        // TODO: When you have keyboard input working:
-        // Read from keyboard buffer
         klogf("[syscall] sys_read: stdin not yet implemented\n");
         return 0;  // EOF for now
     }
     
-    // TODO: Handle file reads via VFS
+    if (fd == 1 || fd == 2) {
+        klogf("[syscall] sys_read cannot read from stdout/stderr\n");
+        return 0; // EOF
+    }
     
-    klogf("[syscall] sys_read: invalid fd %u\n", fd);
-    return -1;  // EBADF
+    int bytes_read = vfs_read(fd, buffer, count);
+    
+    if (bytes_read < 0) {
+        klogf("[syscall] sys_read: vfs_read failed for fd %u\n", fd);
+        return -1;
+    }
+    
+    klogf("[syscall] sys_read: read %d bytes from fd %u\n", bytes_read, fd);
+    return bytes_read;
 }
 
 uint32_t sys_open(uint32_t pathname, uint32_t flags, uint32_t mode, uint32_t u4, uint32_t u5) {
-    (void)u4; (void)u5;
+    (void)mode; (void)u4; (void)u5;
     
     if (pathname == 0) {
         klogf("[syscall] sys_open: NULL pathname\n");
@@ -96,13 +109,15 @@ uint32_t sys_open(uint32_t pathname, uint32_t flags, uint32_t mode, uint32_t u4,
     
     char *path = (char*)pathname;
     
-    klogf("[syscall] sys_open: path='%s', flags=0x%x, mode=0x%x\n", path, flags, mode);
+    int fd = vfs_open(path, flags);
+
+    if (fd < 0) {
+        klogf("[syscall] sys_open: failed to open '%s'\n", path);
+        return -1;
+    }
     
-    // TODO: Implement via VFS when ready
-    // For now, just log and fail
-    
-    klogf("[syscall] sys_open: VFS not yet implemented\n");
-    return -1;  // ENOENT (no such file)
+    klogf("[syscall] sys_open: opened '%s' as fd %d\n", path, fd);
+    return fd;
 }
 
 uint32_t sys_close(uint32_t fd, uint32_t u2, uint32_t u3, uint32_t u4, uint32_t u5) {
@@ -115,12 +130,14 @@ uint32_t sys_close(uint32_t fd, uint32_t u2, uint32_t u3, uint32_t u4, uint32_t 
         return -1;  // EBADF
     }
     
-    klogf("[syscall] sys_close: fd=%u\n", fd);
-    
-    // TODO: Implement via VFS and process fd table
-    
-    klogf("[syscall] sys_close: VFS not yet implemented\n");
-    return -1;  // EBADF
+    int ret = vfs_close(fd);
+
+    if (ret < 0) {
+        klogf("[syscall] sys_close failed!\n");
+        return -1;
+    }
+
+    return 0;
 }
 
 uint32_t sys_fork(uint32_t u1, uint32_t u2, uint32_t u3, uint32_t u4, uint32_t u5) {
@@ -230,7 +247,7 @@ uint32_t sys_brk(uint32_t addr, uint32_t u2, uint32_t u3, uint32_t u4, uint32_t 
             // Get physical address and free it
             uint32_t phys_addr = vmm_get_physical(vaddr);
             if (phys_addr) {
-                pmm_mark_free((void*)phys_addr);
+                pmm_mark_free(phys_addr);
             }
             
             // Unmap the page
@@ -238,8 +255,8 @@ uint32_t sys_brk(uint32_t addr, uint32_t u2, uint32_t u3, uint32_t u4, uint32_t 
         }
 
         __asm__ volatile(
-            "mov %%cr3, %%eax"
-            "mov %%eax, %%cr3"
+            "mov %%cr3, %%eax;"
+            "mov %%eax, %%cr3;"
             : : : "eax"
         );
     }

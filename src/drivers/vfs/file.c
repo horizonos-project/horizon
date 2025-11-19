@@ -9,7 +9,7 @@ void fd_table_init(void) {
 }
 
 int fd_alloc(file_t **out) {
-    for (int i = 0; i < VFS_MAX_FDS; i++) {
+    for (int i = 3; i < VFS_MAX_FDS; i++) {
         if (!fd_table[i].in_use) {
             fd_table[i].in_use = true;
             *out = &fd_table[i];
