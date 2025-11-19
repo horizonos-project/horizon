@@ -3,6 +3,9 @@
 .cache/
 .vs/
 
+# Docs!
+docs/
+
 # Build directory
 build/
 
