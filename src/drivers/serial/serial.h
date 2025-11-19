@@ -14,11 +14,7 @@
  * qemu-system-i386 -serial stdio
  * ```
  * 
- * This is the "literal bare minimum" implementation - just enough to
- * get text output working. No input, no flow control, no fancy stuff.
- * And honestly? That's all we need! 🎯
- * 
- * @note Serial output works even when everything else is on fire 🔥
+ * @note Serial output works even when everything else is on fire!
  */
 
 #pragma once

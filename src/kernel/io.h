@@ -73,4 +73,16 @@ static inline uint8_t inb(uint16_t port) {
     return ret;
 }
 
+/**
+ * @brief It's like inb but 16-bit (wide)
+ * 
+ * @param port 
+ * @return uint16_t 
+ */
+static inline uint16_t inw(uint16_t port) {
+    uint16_t ret;
+    __asm__ volatile("inw %1, %0" : "=a"(ret) : "Nd"(port));
+    return ret;
+}
+
 #endif // IO_H

@@ -197,7 +197,7 @@ uint32_t sys_brk(uint32_t addr, uint32_t u2, uint32_t u3, uint32_t u4, uint32_t 
     if (current_brk == 0) {
         heap_start = 0x40000000;
         current_brk = heap_start;
-        klogf("[brk] Initalized heap at 0x%x", heap_start);
+        klogf("[brk] Initalized heap at 0x%x\n", heap_start);
     }
 
     // Query current brk
