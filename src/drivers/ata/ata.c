@@ -4,7 +4,7 @@
  */
 
 #include "ata.h"
-#include "blkdev.h"
+#include "../block/blkdev.h"
 #include "kernel/io.h"
 #include "kernel/log.h"
 #include "libk/kprint.h"

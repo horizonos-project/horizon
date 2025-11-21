@@ -10,6 +10,8 @@
 #include "libk/kprint.h"
 #include "drivers/video/vga.h"
 #include "drivers/fs/ext2.h"
+#include "drivers/ata/ata.h"
+#include "drivers/block/blkdev.h"
 #include "log.h"
 #include "drivers/serial/serial.h"
 #include "mm/mm.h"
@@ -22,6 +24,7 @@ extern int vfs_init(void);
 extern int dummy_fs_init(void);
 extern void serial_init(void);
 extern void serial_puts(const char *s);
+extern 
 
 // Kernel heap memory management
 extern void kheap_init(void);
@@ -155,6 +158,16 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
         goto bad_vfs;
     }
 
+    // Initalize the block device layer
+    blkdev_init();
+    klogf("[ok] Block device layer initialized.\n");
+
+    if (ata_init() < 0) {
+        klogf("[warn] No ATA drives detected. Continuing witout disk.\n");
+    } else {
+        klogf("[ok] ATA drive detected and registered.\n");
+    }
+
     initramfs_init();
     
     if (vfs_mount("initramfs", NULL, "/") < 0) {
@@ -170,6 +183,23 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     }
 
     klogf("[ok] ext2 registered successfully.\n");
+
+    // Mount the present ATA/IDE drive if found.
+    if (ata_drive_present()) {
+        klogf("[ext2] Attempting to mount /dev/hda...\n");
+        if (ext2_mount("hda") < 0) {
+            klogf("[warn] Failed to mount EXT2 on /dev/hda\n");
+            klogf("[warn] Disk may not be formatted as EXT2\n");
+        } else {
+            klogf("[ok] EXT2 filesystem mounted on /dev/hda!\n");
+            
+            // Optional: Try to read something from it
+            stat_t st;
+            if (vfs_stat("/test.txt", &st) == 0) {
+                klogf("[ext2] Found /test.txt (size: %u bytes)\n", st.size);
+            }
+        }
+    }
 
     // multiboot info
     display_mb_info(mb);

@@ -35,6 +35,7 @@ initramfs/
 *.iso
 *.elf
 *.out
+*.img
 
 # Libraries and other compiler leftovers
 *.s

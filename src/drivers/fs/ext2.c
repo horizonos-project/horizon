@@ -140,6 +140,7 @@ static int  ext2_stat(const char *path, stat_t *st);
 static int ext2_read_superblock(void);
 static int ext2_read_inode(uint32_t inode_num, ext2_inode_t *inode);
 static int ext2_find_inode_by_path(const char *path, uint32_t *inode_num);
+static int ext2_read_bgd_table(void);
 
 // --------------------- I/O helpers ! --------------------- 
 
@@ -166,7 +167,7 @@ static int ext2_device_read(uint32_t offset, void *buf, size_t size) {
     uint32_t num_sectors = end_sector - start_sector + 1;
     
     // Allocate temporary buffer for sector-aligned read
-    uint8_t *temp = (uint8_t*)kmalloc(num_sectors * 512);
+    uint8_t *temp = (uint8_t*)kalloc(num_sectors * 512);
     if (!temp) {
         kprintf("[ext2] ERROR: Failed to allocate temp buffer\n");
         return -1;
@@ -386,7 +387,7 @@ static int ext2_read_bgd_table(void) {
     
     // Allocate memory for BGD table
     size_t bgd_table_size = ext2_state.num_block_groups * sizeof(ext2_bgd_t);
-    ext2_state.block_groups = (ext2_bgd_t*)kmalloc(bgd_table_size);
+    ext2_state.block_groups = (ext2_bgd_t*)kalloc(bgd_table_size);
     if (!ext2_state.block_groups) {
         kprintf("[ext2] ERROR: Failed to allocate BGD table\n");
         return -1;

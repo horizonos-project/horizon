@@ -85,4 +85,17 @@ static inline uint16_t inw(uint16_t port) {
     return ret;
 }
 
+/**
+ * @brief It's like outb but 16-bit (wide)
+ *
+ * @param port  I/O port to write to
+ * @param value 16-bit value to write
+ */
+static inline void outw(uint16_t port, uint16_t value) {
+    __asm__ volatile("outw %0, %1"
+                     :
+                     : "a"(value), "Nd"(port));
+}
+
+
 #endif // IO_H
