@@ -24,7 +24,6 @@ extern int vfs_init(void);
 extern int dummy_fs_init(void);
 extern void serial_init(void);
 extern void serial_puts(const char *s);
-extern 
 
 // Kernel heap memory management
 extern void kheap_init(void);
@@ -128,13 +127,15 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
 
     multiboot_info_t *mb = (multiboot_info_t *)(uintptr_t)mb_info_addr;
 
-    // Initalizing the subsystems like log and fs
+    // ========== Phase 1: Basic Hardware & Logging ==========
     
     log_init();
    
-    klogf("[ok] Logging initalized.\n");
+    klogf("[ok] Logging initialized.\n");
     klogf("[ok] VGA/Serial ready.\n");
 
+    // ========== Phase 2: CPU & Interrupt Setup ==========
+    
     idt_init();
     gdt_install();
     isr_install();
@@ -153,55 +154,8 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     klogf("[ok] IDT loaded and exceptions are online.\n");
     klogf("[ok] ISR and IRQ are also OK.\n");
 
-    if (vfs_init() < 0) {
-        klogf("[fail] VFS failure.\n");
-        goto bad_vfs;
-    }
-
-    // Initalize the block device layer
-    blkdev_init();
-    klogf("[ok] Block device layer initialized.\n");
-
-    if (ata_init() < 0) {
-        klogf("[warn] No ATA drives detected. Continuing witout disk.\n");
-    } else {
-        klogf("[ok] ATA drive detected and registered.\n");
-    }
-
-    initramfs_init();
+    // ========== Phase 3: Memory Management ==========
     
-    if (vfs_mount("initramfs", NULL, "/") < 0) {
-        klogf("[bad] Failed to mount initramfs!\n");
-        goto bad_vfs;
-    }
-    
-    klogf("[ok] initramfs mounted at '/'\n");
-
-    if (ext2_register() < 0) {
-        klogf("[fail] ext2 registration failed.\n");
-        goto bad_ext2_fs;
-    }
-
-    klogf("[ok] ext2 registered successfully.\n");
-
-    // Mount the present ATA/IDE drive if found.
-    if (ata_drive_present()) {
-        klogf("[ext2] Attempting to mount /dev/hda...\n");
-        if (ext2_mount("hda") < 0) {
-            klogf("[warn] Failed to mount EXT2 on /dev/hda\n");
-            klogf("[warn] Disk may not be formatted as EXT2\n");
-        } else {
-            klogf("[ok] EXT2 filesystem mounted on /dev/hda!\n");
-            
-            // Optional: Try to read something from it
-            stat_t st;
-            if (vfs_stat("/test.txt", &st) == 0) {
-                klogf("[ext2] Found /test.txt (size: %u bytes)\n", st.size);
-            }
-        }
-    }
-
-    // multiboot info
     display_mb_info(mb);
 
     pmm_init(mb);
@@ -212,8 +166,66 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     klogf("[vmm] Virtual Memory Management is OK.\n");
     
     kheap_init();
-    klogf("[heap] Kernel heap as been allocated.\n");
+    klogf("[heap] Kernel heap has been allocated.\n");
     test_heap();
+
+    // ========== Phase 4: Block Devices & Filesystems ==========
+    
+    if (vfs_init() < 0) {
+        klogf("[fail] VFS failure.\n");
+        goto bad_vfs;
+    }
+
+    // Initialize block device layer
+    blkdev_init();
+    klogf("[ok] Block device layer initialized.\n");
+
+    // Initialize ATA driver (if present)
+    if (ata_init() < 0) {
+        klogf("[warn] No ATA drives detected. Continuing without disk.\n");
+    } else {
+        klogf("[ok] ATA drive detected and registered.\n");
+    }
+
+    // Initialize initramfs (static data, no heap needed for init)
+    initramfs_init();
+
+    // Register filesystem drivers
+    if (ext2_register() < 0) {
+        klogf("[fail] ext2 registration failed.\n");
+        goto bad_ext2_fs;
+    }
+    klogf("[ok] ext2 registered successfully.\n");
+
+    // Mount root filesystem (EXT2 if available, else initramfs)
+    if (ata_drive_present()) {
+        klogf("[ext2] Attempting to mount /dev/hda as root...\n");
+        if (vfs_mount("ext2", "hda", "/") < 0) {
+            klogf("[warn] Failed to mount EXT2, falling back to initramfs\n");
+            if (vfs_mount("initramfs", NULL, "/") < 0) {
+                klogf("[fail] Failed to mount initramfs!\n");
+                goto bad_vfs;
+            }
+            klogf("[ok] initramfs mounted at '/'\n");
+        } else {
+            klogf("[ok] EXT2 filesystem mounted at '/'!\n");
+            
+            // Test reading from disk
+            stat_t st;
+            if (vfs_stat("/test.txt", &st) == 0) {
+                klogf("[ext2] Found /test.txt (size: %u bytes)\n", st.size);
+            }
+        }
+    } else {
+        // No disk, use initramfs
+        if (vfs_mount("initramfs", NULL, "/") < 0) {
+            klogf("[fail] Failed to mount initramfs!\n");
+            goto bad_vfs;
+        }
+        klogf("[ok] initramfs mounted at '/'\n");
+    }
+
+    // ========== Phase 5: Ring 3 & Process Setup ==========
 
     uint32_t k_stack = (uint32_t)kalloc(4096);
     if (!k_stack) {
@@ -240,11 +252,12 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     
     if (!((eflags >> 9) & 1)) {
         klogf("[cpu] CRITICAL: Interrupts are NOT enabled!\n");
-        klogf("sti didn't work");
+        klogf("[cpu] sti didn't work\n");
     }
 
     kprintf_both("[ring3] The kernel is now ready for ring3 operations.\n");
 
+    // Allocate user stack
     void *user_stack_frame = pmm_alloc_frame();
     if (!user_stack_frame) {
         kprintf_both("[kernel] Failed to allocate user stack frame!\n");
@@ -266,10 +279,12 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
 
     klogf("[ring3]   Stack top: 0x%08x\n", user_stack_top);
 
+    // ========== Phase 6: Launch Userspace ==========
+
     jump_to_elf("/bin/hello");
 
-    // This should only be jumped to after the kernel has finished everything
-    // it needs to during its lifecycle
+    // ========== System Halt (Should Never Reach Here) ==========
+
     goto hang_ok;
 
 hang_ok:
@@ -278,7 +293,6 @@ hang_ok:
     kprintf("You can now power down the PC.\n");
     goto hang;
 
-// Not unused, this will come back when the OS runs self-tests and one of them fails
 test_fail:
     klogf("System is in a halting state! (TEST FAIL)\n");
     kprintf("\nA test has failed and the system was halted!\n");
@@ -298,7 +312,7 @@ bad_ext2_fs:
 
 bad_vfs:
     klogf("System is in a halting state! (VFS BAD)\n");
-    kprintf("\nSystem failed to initalize the VFS.\n");
+    kprintf("\nSystem failed to initialize the VFS.\n");
     kprintf("The system has been halted to prevent damage to the machine.\n");
     goto hang;
 

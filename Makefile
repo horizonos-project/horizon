@@ -178,15 +178,17 @@ run: raw
 	@clear
 	@printf "$(BLUE)[RUN]$(RESET) Running kernel in qemu-system-i386...\n"
 	@qemu-system-i386 -kernel $(KERNEL) -m 128M \
+		-drive file=disk.img,format=raw,if=ide \
 		-serial stdio -display default \
 		-no-reboot -no-shutdown
 
 run-iso: iso
 	@clear
-	@printf "$(BLUE)[RUN]$(RESET) Running ISO fin qemu-system-i386...\n"
+	@printf "$(BLUE)[RUN]$(RESET) Running ISO in qemu-system-i386...\n"
 	@qemu-system-i386 -cdrom $(ISO) -m 128M \
-	-serial stdio -display default \
-	-no-reboot -no-shutdown
+		-drive file=disk.img,format=raw,if=ide \
+		-serial stdio -display default \
+		-no-reboot -no-shutdown
 
 debug: raw
 	@printf "$(BLUE)[DBG]$(RESET) Debugging kernel in qemu-system-i386...\n"

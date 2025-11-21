@@ -166,6 +166,7 @@ int ata_init(void) {
     
     // Wait for DRQ
     if (ata_wait_drq() < 0) {
+        klogf("[ata] Failed waiting for DRQ\n");
         return -1;
     }
     
@@ -189,6 +190,10 @@ int ata_init(void) {
     for (int i = 39; i >= 0 && drive_model[i] == ' '; i--) {
         drive_model[i] = '\0';
     }
+
+    klogf("[ata] Drive detected: %s\n", drive_model);
+    klogf("[ata] Capacity: %u sectors (%u MB)\n", 
+          drive_capacity, (drive_capacity * 512) / (1024 * 1024));
     
     drive_initialized = true;
     
