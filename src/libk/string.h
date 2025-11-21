@@ -104,3 +104,28 @@ void *memset(void *dest, int value, size_t n);
  * @return 0 if equal, <0 if s1 < s2, >0 if s1 > s2
  */
 int memcmp(const void *s1, const void *s2, size_t n);
+
+/**
+ * @brief Split string into tokens
+ * 
+ * Breaks a string into a sequence of tokens separated by any character
+ * from delim. On first call, pass the string to tokenize. On subsequent
+ * calls, pass NULL to continue tokenizing the same string.
+ * 
+ * @param str String to tokenize (or NULL to continue)
+ * @param delim String containing delimiter characters
+ * @return Pointer to next token, or NULL if no more tokens
+ * @warning Not thread-safe! Modifies the input string!
+ */
+char *strtok(char *str, const char *delim);
+
+/**
+ * @brief Find first occurrence of character in string
+ * 
+ * Helper function for strtok.
+ * 
+ * @param s String to search
+ * @param c Character to find
+ * @return Pointer to first occurrence, or NULL if not found
+ */
+char *strchr(const char *s, int c);

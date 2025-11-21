@@ -65,3 +65,62 @@ int memcmp(const void *s1, const void *s2, size_t n) {
     }
     return 0;
 }
+
+char *strtok(char *str, const char *delim) {
+    static char *saved = NULL;  // Remember position between calls
+    
+    // If str is NULL, continue from saved position
+    if (str == NULL) {
+        str = saved;
+    }
+    
+    // If nothing left to tokenize, return NULL
+    if (str == NULL) {
+        return NULL;
+    }
+    
+    // Skip leading delimiters
+    while (*str && strchr(delim, *str)) {
+        str++;
+    }
+    
+    // If we've reached the end, no more tokens
+    if (*str == '\0') {
+        saved = NULL;
+        return NULL;
+    }
+    
+    // Found start of token
+    char *token_start = str;
+    
+    // Find end of token (next delimiter or end of string)
+    while (*str && !strchr(delim, *str)) {
+        str++;
+    }
+    
+    // If we found a delimiter, replace it with null terminator
+    if (*str) {
+        *str = '\0';
+        saved = str + 1;
+    } else {
+        saved = NULL;  // No more tokens after this
+    }
+    
+    return token_start;
+}
+
+char *strchr(const char *s, int c) {
+    while (*s) {
+        if (*s == (char)c) {
+            return (char*)s;
+        }
+        s++;
+    }
+    
+    // Check if we're looking for null terminator
+    if (c == '\0') {
+        return (char*)s;
+    }
+    
+    return NULL;
+}
