@@ -1,6 +1,8 @@
 #include "blkdev.h"
 #include "libk/string.h"
 #include "libk/kprint.h"
+#include "kernel/log.h"
+#include "../fs/ext2.h"
 
 static blkdev_t devices[BLKDEV_MAX_DEVICES];
 
@@ -28,11 +30,17 @@ blkdev_t* blkdev_register(const char *name, blkdev_ops_t *ops, void *driver_data
 }
 
 blkdev_t* blkdev_find(const char *name) {
+    klogf("[blkdev] Looking for device '%s'\n", name);
     for (int i = 0; i < BLKDEV_MAX_DEVICES; i++) {
+        if (devices[i].in_use) {
+            klogf("[blkdev]   Checking device '%s'\n", devices[i].name);
+        }
         if (devices[i].in_use && strcmp(devices[i].name, name) == 0) {
+            klogf("[blkdev]   Found!\n");
             return &devices[i];
         }
     }
+    klogf("[blkdev]   Not found!\n");
     return NULL;
 }
 

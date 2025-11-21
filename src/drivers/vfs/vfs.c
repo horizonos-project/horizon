@@ -1,5 +1,6 @@
 #include "vfs.h"
 #include "file.h"
+#include "../../kernel/log.h"
 #include "libk/string.h"
 
 // Mount table (for now, just root)
@@ -24,6 +25,8 @@ int vfs_register_fs(fs_ops_t *ops) {
 }
 
 int vfs_mount(const char *fs_name, const char *device, const char *mountpoint) {
+    klogf("[vfs] mount(fs='%s', device='%s', mountpoint='%s')\n", 
+          fs_name, device ? device : "(null)", mountpoint);
     // Find filesystem by name
     fs_ops_t *fs = NULL;
     for (int i = 0; i < num_fs_types; i++) {

@@ -8,7 +8,7 @@
 #include <stddef.h>
 #include "../vfs/vfs.h"
 #include "../block/blkdev.h"
-#include "libk/kprint.h"
+#include "kernel/log.h"
 #include "libk/string.h"
 #include "mm/mm.h"
 
@@ -59,7 +59,6 @@ typedef struct {
     uint32_t s_rev_level;         // Revision level
     uint16_t s_def_resuid;        // Default reserved user ID
     uint16_t s_def_resgid;        // Default reserved group ID
-    // TODO: We need more of these later down the line.
 } __attribute__((packed)) ext2_superblock_t;
 
 /**
@@ -77,6 +76,19 @@ typedef struct {
     uint16_t bg_pad;               // Padding
     uint8_t  bg_reserved[12];      // Reserved
 } __attribute__((packed)) ext2_bgd_t;
+
+/**
+ * @brief EXT2 Directory Entry (variable length)
+ * 
+ * Directories are just files containing a list of these entries.
+ */
+typedef struct {
+    uint32_t inode;      // Inode number (0 = unused entry)
+    uint16_t rec_len;    // Length of this entry (including name)
+    uint8_t  name_len;   // Length of name
+    uint8_t  file_type;  // File type (EXT2_FT_*)
+    char     name[];     // Filename (not null-terminated!)
+} __attribute__((packed)) ext2_dirent_t;
 
 /**
  * @brief EXT2 Inode (128 bytes)
@@ -111,7 +123,7 @@ typedef struct {
  */
 typedef struct {
     bool mounted;
-    uint32_t block_size;         // Computed from superblock
+    uint32_t block_size;
     uint32_t inodes_per_group;
     uint32_t blocks_per_group;
     uint32_t num_block_groups;
@@ -119,12 +131,12 @@ typedef struct {
     blkdev_t *device;
     
     ext2_superblock_t superblock;
-    ext2_bgd_t *block_groups;    // Array of block group descriptors
+    ext2_bgd_t *block_groups;
 } ext2_state_t;
 
 static ext2_state_t ext2_state = {0};
 
-// ----------------- Forward decl ext2 functions  -----------------
+// ----------------- Forward Declarations -----------------
 
 static int  ext2_init(void);
 static int  ext2_mount(const char *device);
@@ -138,50 +150,41 @@ static int  ext2_readdir(file_t *dir, dirent_t *entry);
 static int  ext2_stat(const char *path, stat_t *st);
 
 static int ext2_read_superblock(void);
+static int ext2_read_bgd_table(void);
 static int ext2_read_inode(uint32_t inode_num, ext2_inode_t *inode);
 static int ext2_find_inode_by_path(const char *path, uint32_t *inode_num);
-static int ext2_read_bgd_table(void);
+static int ext2_search_directory(ext2_inode_t *dir_inode, const char *name, uint32_t *found_inode);
+static int ext2_read_inode_data(ext2_inode_t *inode, uint32_t offset, void *buf, size_t count);
+static uint32_t ext2_get_block_number(ext2_inode_t *inode, uint32_t file_block);
 
-// --------------------- I/O helpers ! --------------------- 
+// ----------------- I/O Helpers -----------------
 
 /**
  * @brief Read bytes from the block device
- * 
- * Handles reading arbitrary byte ranges by reading the necessary
- * sectors and extracting the requested data.
- * 
- * @param offset Byte offset from start of device
- * @param buf Buffer to read into
- * @param size Number of bytes to read
- * @return 0 on success, -1 on error
  */
 static int ext2_device_read(uint32_t offset, void *buf, size_t size) {
     if (!ext2_state.device) {
-        kprintf("[ext2] ERROR: No device mounted\n");
+        kprintf_both("[ext2] ERROR: No device mounted\n");
         return -1;
     }
     
-    // Calculate which sectors we need
     uint32_t start_sector = offset / 512;
     uint32_t end_sector = (offset + size - 1) / 512;
     uint32_t num_sectors = end_sector - start_sector + 1;
     
-    // Allocate temporary buffer for sector-aligned read
     uint8_t *temp = (uint8_t*)kalloc(num_sectors * 512);
     if (!temp) {
-        kprintf("[ext2] ERROR: Failed to allocate temp buffer\n");
+        kprintf_both("[ext2] ERROR: Failed to allocate temp buffer\n");
         return -1;
     }
     
-    // Read sectors
     int ret = blkdev_read(ext2_state.device, start_sector, temp, num_sectors);
     if (ret < 0) {
-        kprintf("[ext2] ERROR: Block device read failed\n");
+        kprintf_both("[ext2] ERROR: Block device read failed\n");
         kfree(temp);
         return -1;
     }
     
-    // Extract requested bytes
     uint32_t offset_in_sector = offset % 512;
     memcpy(buf, temp + offset_in_sector, size);
     
@@ -191,17 +194,10 @@ static int ext2_device_read(uint32_t offset, void *buf, size_t size) {
 
 /**
  * @brief Read a filesystem block
- * 
- * EXT2 blocks can be 1024, 2048, or 4096 bytes. This function
- * reads an entire block.
- * 
- * @param block_num Block number (not byte offset!)
- * @param buf Buffer to read into (must be block_size bytes)
- * @return 0 on success, -1 on error
  */
 static int ext2_read_block(uint32_t block_num, void *buf) {
     if (ext2_state.block_size == 0) {
-        kprintf("[ext2] ERROR: Block size not initialized\n");
+        kprintf_both("[ext2] ERROR: Block size not initialized\n");
         return -1;
     }
     
@@ -209,7 +205,7 @@ static int ext2_read_block(uint32_t block_num, void *buf) {
     return ext2_device_read(offset, buf, ext2_state.block_size);
 }
 
-// --------------------- FSOps table ---------------------
+// ----------------- FSOps Table -----------------
 
 static fs_ops_t ext2_ops = {
     .name     = "ext2",
@@ -224,53 +220,50 @@ static fs_ops_t ext2_ops = {
     .stat     = ext2_stat,
 };
 
-// --------------------- ext2 public api ---------------------
+// ----------------- Filesystem Operations -----------------
 
 static int ext2_init(void) {
-    kprintf("[ext2] Initalizing ext2 driver...\n");
+    kprintf_both("[ext2] Initializing ext2 driver...\n");
     memset(&ext2_state, 0, sizeof(ext2_state));
     return 0;
 }
 
 static int ext2_mount(const char *device) {
-    kprintf("[ext2] Mounting '%s'...\n", device ? device : "(NULL)");
+    kprintf_both("[ext2] Mounting '%s'...\n", device ? device : "(NULL)");
 
     if (ext2_state.mounted) {
-        kprintf("[ext2] ERROR: Already mounted\n");
+        kprintf_both("[ext2] ERROR: Already mounted\n");
         return -1;
     }
     
     if (!device) {
-        kprintf("[ext2] ERROR: No device specified\n");
+        kprintf_both("[ext2] ERROR: No device specified\n");
         return -1;
     }
     
-    // CHANGED: Find block device by name
     ext2_state.device = blkdev_find(device);
     if (!ext2_state.device) {
-        kprintf("[ext2] ERROR: Block device '%s' not found\n", device);
+        kprintf_both("[ext2] ERROR: Block device '%s' not found\n", device);
         return -1;
     }
     
-    // Read and validate superblock
     if (ext2_read_superblock() < 0) {
         ext2_state.device = NULL;
         return -1;
     }
     
-    // Read block group descriptor table
     if (ext2_read_bgd_table() < 0) {
         ext2_state.device = NULL;
         return -1;
     }
     
     ext2_state.mounted = true;
-    kprintf("[ext2] Mount successful!\n");
+    kprintf_both("[ext2] Mount successful!\n");
     return 0;
 }
 
 static void ext2_unmount(void) {
-    kprintf("[ext2] Unmounting...\n");
+    kprintf_both("[ext2] Unmounting...\n");
 
     if (ext2_state.block_groups) {
         kfree(ext2_state.block_groups);
@@ -282,161 +275,419 @@ static void ext2_unmount(void) {
 }
 
 static int ext2_open(const char *path, int flags, file_t *file) {
-    kprintf("[ext2] open('%s', flags=%d)\n", path, flags);
+    kprintf_both("[ext2] open('%s', flags=%d)\n", path, flags);
     
     if (!ext2_state.mounted) {
-        kprintf("[ext2] ERROR: Filesystem not mounted\n");
+        kprintf_both("[ext2] ERROR: Filesystem not mounted\n");
         return -1;
     }
     
-    // TODO: Phase 4 - Find inode by path
-    // TODO: Phase 5 - Set up file_t structure
+    // Find the inode for this path
+    uint32_t inode_num;
+    if (ext2_find_inode_by_path(path, &inode_num) < 0) {
+        return -1;
+    }
     
-    return -1; // ENOENT for now
+    // Read the inode
+    ext2_inode_t *inode = (ext2_inode_t*)kalloc(sizeof(ext2_inode_t));
+    if (!inode) {
+        return -1;
+    }
+    
+    if (ext2_read_inode(inode_num, inode) < 0) {
+        kfree(inode);
+        return -1;
+    }
+    
+    // Store inode in file structure
+    file->fs_data = inode;
+    file->offset = 0;
+    file->flags = flags;
+    
+    return 0;
 }
 
 static int ext2_close(file_t *file) {
-    (void)file;
-    // Nothing to clean up yet
+    if (file && file->fs_data) {
+        kfree(file->fs_data);
+        file->fs_data = NULL;
+    }
     return 0;
 }
 
 static int ext2_read(file_t *file, void *buf, size_t count) {
-    (void)file; (void)buf; (void)count;
-    kprintf("[ext2] read() - TODO\n");
-    return 0;
+    if (!file || !file->fs_data) {
+        return -1;
+    }
+    
+    ext2_inode_t *inode = (ext2_inode_t*)file->fs_data;
+    
+    int bytes_read = ext2_read_inode_data(inode, file->offset, buf, count);
+    if (bytes_read > 0) {
+        file->offset += bytes_read;
+    }
+    
+    return bytes_read;
 }
 
 static int ext2_write(file_t *file, const void *buf, size_t count) {
     (void)file; (void)buf; (void)count;
-    kprintf("[ext2] write() - read-only for now\n");
-    return -1; // EROFS
+    kprintf_both("[ext2] write() - read-only for now\n");
+    return -1;
 }
 
 static int ext2_readdir(file_t *dir, dirent_t *entry) {
     (void)dir; (void)entry;
-    kprintf("[ext2] readdir() - TODO\n");
+    kprintf_both("[ext2] readdir() - TODO\n");
     return 0;
 }
 
 static int ext2_stat(const char *path, stat_t *st) {
-    (void)path; (void)st;
-    kprintf("[ext2] stat() - TODO\n");
-    return -1;
-}
-
-// ----------------- Helper Functions -----------------
-
-/**
- * @brief Read and validate the EXT2 superblock
- */
-static int ext2_read_superblock(void) {
-    kprintf("[ext2] Reading superblock at offset %d...\n", EXT2_SUPER_BLOCK_OFFSET);
-    
-    // Read the superblock from byte 1024
-    if (ext2_device_read(EXT2_SUPER_BLOCK_OFFSET, 
-                         &ext2_state.superblock, 
-                         sizeof(ext2_superblock_t)) < 0) {
-        kprintf("[ext2] ERROR: Failed to read superblock\n");
+    uint32_t inode_num;
+    if (ext2_find_inode_by_path(path, &inode_num) < 0) {
         return -1;
     }
     
-    // Validate magic number
-    if (ext2_state.superblock.s_magic != EXT2_SUPER_MAGIC) {
-        kprintf("[ext2] ERROR: Invalid magic number 0x%x (expected 0x%x)\n",
-                ext2_state.superblock.s_magic, EXT2_SUPER_MAGIC);
+    ext2_inode_t inode;
+    if (ext2_read_inode(inode_num, &inode) < 0) {
         return -1;
     }
     
-    kprintf("[ext2] Valid EXT2 filesystem detected!\n");
+    st->inode = inode_num;
+    st->size = inode.i_size;
+    st->mode = inode.i_mode;
     
-    // Calculate block size
-    ext2_state.block_size = 1024 << ext2_state.superblock.s_log_block_size;
-    ext2_state.inodes_per_group = ext2_state.superblock.s_inodes_per_group;
-    ext2_state.blocks_per_group = ext2_state.superblock.s_blocks_per_group;
-    
-    // Calculate number of block groups
-    ext2_state.num_block_groups = 
-        (ext2_state.superblock.s_blocks_count + ext2_state.blocks_per_group - 1) 
-        / ext2_state.blocks_per_group;
-    
-    kprintf("[ext2] Block size: %u bytes\n", ext2_state.block_size);
-    kprintf("[ext2] Total blocks: %u\n", ext2_state.superblock.s_blocks_count);
-    kprintf("[ext2] Total inodes: %u\n", ext2_state.superblock.s_inodes_count);
-    kprintf("[ext2] Inodes per group: %u\n", ext2_state.inodes_per_group);
-    kprintf("[ext2] Blocks per group: %u\n", ext2_state.blocks_per_group);
-    kprintf("[ext2] Block groups: %u\n", ext2_state.num_block_groups);
+    // Determine type
+    if (inode.i_mode & EXT2_S_IFDIR) {
+        st->type = VFS_DIR;
+    } else if (inode.i_mode & EXT2_S_IFREG) {
+        st->type = VFS_FILE;
+    } else {
+        st->type = VFS_FILE;
+    }
     
     return 0;
 }
 
-/**
- * @brief Read block group descriptor table
- * 
- * The BGD table comes immediately after the superblock.
- * Its location depends on block size:
- * - 1024 byte blocks: BGD starts at block 2
- * - 2048+ byte blocks: BGD starts at block 1
- */
-static int ext2_read_bgd_table(void) {
-    kprintf("[ext2] Reading block group descriptor table...\n");
+// ----------------- Helper Functions -----------------
+
+static int ext2_read_superblock(void) {
+    kprintf_both("[ext2] Reading superblock at offset %d...\n", EXT2_SUPER_BLOCK_OFFSET);
     
-    // Calculate BGD table location
-    uint32_t bgd_block = (ext2_state.block_size == 1024) ? 2 : 1;
-    uint32_t bgd_offset = bgd_block * ext2_state.block_size;
-    
-    // Allocate memory for BGD table
-    size_t bgd_table_size = ext2_state.num_block_groups * sizeof(ext2_bgd_t);
-    ext2_state.block_groups = (ext2_bgd_t*)kalloc(bgd_table_size);
-    if (!ext2_state.block_groups) {
-        kprintf("[ext2] ERROR: Failed to allocate BGD table\n");
+    if (ext2_device_read(EXT2_SUPER_BLOCK_OFFSET, 
+                         &ext2_state.superblock, 
+                         sizeof(ext2_superblock_t)) < 0) {
+        kprintf_both("[ext2] ERROR: Failed to read superblock\n");
         return -1;
     }
     
-    // Read BGD table
+    if (ext2_state.superblock.s_magic != EXT2_SUPER_MAGIC) {
+        kprintf_both("[ext2] ERROR: Invalid magic number 0x%x (expected 0x%x)\n",
+                ext2_state.superblock.s_magic, EXT2_SUPER_MAGIC);
+        return -1;
+    }
+    
+    kprintf_both("[ext2] Valid EXT2 filesystem detected!\n");
+    
+    ext2_state.block_size = 1024 << ext2_state.superblock.s_log_block_size;
+    ext2_state.inodes_per_group = ext2_state.superblock.s_inodes_per_group;
+    ext2_state.blocks_per_group = ext2_state.superblock.s_blocks_per_group;
+    
+    ext2_state.num_block_groups = 
+        (ext2_state.superblock.s_blocks_count + ext2_state.blocks_per_group - 1) 
+        / ext2_state.blocks_per_group;
+    
+    kprintf_both("[ext2] Block size: %u bytes\n", ext2_state.block_size);
+    kprintf_both("[ext2] Total blocks: %u\n", ext2_state.superblock.s_blocks_count);
+    kprintf_both("[ext2] Total inodes: %u\n", ext2_state.superblock.s_inodes_count);
+    kprintf_both("[ext2] Inodes per group: %u\n", ext2_state.inodes_per_group);
+    kprintf_both("[ext2] Blocks per group: %u\n", ext2_state.blocks_per_group);
+    kprintf_both("[ext2] Block groups: %u\n", ext2_state.num_block_groups);
+    
+    return 0;
+}
+
+static int ext2_read_bgd_table(void) {
+    kprintf_both("[ext2] Reading block group descriptor table...\n");
+    
+    uint32_t bgd_block = (ext2_state.block_size == 1024) ? 2 : 1;
+    uint32_t bgd_offset = bgd_block * ext2_state.block_size;
+    
+    size_t bgd_table_size = ext2_state.num_block_groups * sizeof(ext2_bgd_t);
+    ext2_state.block_groups = (ext2_bgd_t*)kalloc(bgd_table_size);
+    if (!ext2_state.block_groups) {
+        kprintf_both("[ext2] ERROR: Failed to allocate BGD table\n");
+        return -1;
+    }
+    
     if (ext2_device_read(bgd_offset, ext2_state.block_groups, bgd_table_size) < 0) {
-        kprintf("[ext2] ERROR: Failed to read BGD table\n");
+        kprintf_both("[ext2] ERROR: Failed to read BGD table\n");
         kfree(ext2_state.block_groups);
         ext2_state.block_groups = NULL;
         return -1;
     }
     
-    kprintf("[ext2] BGD table loaded (%u groups)\n", ext2_state.num_block_groups);
+    kprintf_both("[ext2] BGD table loaded (%u groups)\n", ext2_state.num_block_groups);
     
-    // Debug: Print first block group info
     ext2_bgd_t *bg0 = &ext2_state.block_groups[0];
-    kprintf("[ext2] Block Group 0:\n");
-    kprintf("  Block bitmap: block %u\n", bg0->bg_block_bitmap);
-    kprintf("  Inode bitmap: block %u\n", bg0->bg_inode_bitmap);
-    kprintf("  Inode table:  block %u\n", bg0->bg_inode_table);
-    kprintf("  Free blocks:  %u\n", bg0->bg_free_blocks_count);
-    kprintf("  Free inodes:  %u\n", bg0->bg_free_inodes_count);
+    kprintf_both("[ext2] Block Group 0:\n");
+    kprintf_both("  Block bitmap: block %u\n", bg0->bg_block_bitmap);
+    kprintf_both("  Inode bitmap: block %u\n", bg0->bg_inode_bitmap);
+    kprintf_both("  Inode table:  block %u\n", bg0->bg_inode_table);
+    kprintf_both("  Free blocks:  %u\n", bg0->bg_free_blocks_count);
+    kprintf_both("  Free inodes:  %u\n", bg0->bg_free_inodes_count);
     
     return 0;
 }
 
+/**
+ * @brief Read an inode from disk
+ * 
+ * EXT2 inodes are numbered starting from 1 (not 0).
+ * Inode 2 is always the root directory.
+ * 
+ * @param inode_num Inode number (1-based)
+ * @param inode Output buffer for inode data
+ * @return 0 on success, -1 on error
+ */
 static int ext2_read_inode(uint32_t inode_num, ext2_inode_t *inode) {
-    // TODO: Phase 3
-    (void)inode_num; (void)inode;
+    if (inode_num == 0) {
+        kprintf_both("[ext2] ERROR: Invalid inode 0\n");
+        return -1;
+    }
+    
+    // Inodes are 1-indexed, but we need 0-indexed for math
+    uint32_t inode_index = inode_num - 1;
+    
+    // Calculate which block group contains this inode
+    uint32_t block_group = inode_index / ext2_state.inodes_per_group;
+    uint32_t local_inode_index = inode_index % ext2_state.inodes_per_group;
+    
+    if (block_group >= ext2_state.num_block_groups) {
+        kprintf_both("[ext2] ERROR: Inode %u out of range\n", inode_num);
+        return -1;
+    }
+    
+    // Get the inode table block for this group
+    ext2_bgd_t *bgd = &ext2_state.block_groups[block_group];
+    uint32_t inode_table_block = bgd->bg_inode_table;
+    
+    // Calculate byte offset within inode table
+    // Each inode is 128 bytes (sizeof(ext2_inode_t))
+    uint32_t inode_offset = local_inode_index * sizeof(ext2_inode_t);
+    
+    // Calculate which block within the inode table
+    uint32_t block_offset = inode_offset / ext2_state.block_size;
+    uint32_t offset_in_block = inode_offset % ext2_state.block_size;
+    
+    // Read the block containing the inode
+    uint8_t *block_buf = (uint8_t*)kalloc(ext2_state.block_size);
+    if (!block_buf) {
+        kprintf_both("[ext2] ERROR: Failed to allocate inode read buffer\n");
+        return -1;
+    }
+    
+    if (ext2_read_block(inode_table_block + block_offset, block_buf) < 0) {
+        kprintf_both("[ext2] ERROR: Failed to read inode table block\n");
+        kfree(block_buf);
+        return -1;
+    }
+    
+    // Copy the inode data
+    memcpy(inode, block_buf + offset_in_block, sizeof(ext2_inode_t));
+    
+    kfree(block_buf);
+    
+    klogf("[ext2] Read inode %u: size=%u, mode=0x%04x\n", 
+          inode_num, inode->i_size, inode->i_mode);
+    
+    return 0;
+}
+
+/**
+ * @brief Find inode by path
+ */
+static int ext2_find_inode_by_path(const char *path, uint32_t *inode_num) {
+    if (!path || path[0] != '/') {
+        kprintf_both("[ext2] ERROR: Path must be absolute\n");
+        return -1;
+    }
+    
+    // Start at root (inode 2)
+    uint32_t current_inode = 2;
+    
+    if (strcmp(path, "/") == 0) {
+        *inode_num = 2;
+        return 0;
+    }
+    
+    // Parse path
+    char path_copy[256];
+    strncpy(path_copy, path + 1, 255);
+    path_copy[255] = '\0';
+    
+    char *token = strtok(path_copy, "/");
+    while (token) {
+        klogf("[ext2] Looking for '%s' in inode %u\n", token, current_inode);
+        
+        ext2_inode_t inode;
+        if (ext2_read_inode(current_inode, &inode) < 0) {
+            return -1;
+        }
+        
+        if ((inode.i_mode & EXT2_S_IFDIR) == 0) {
+            kprintf_both("[ext2] ERROR: Not a directory\n");
+            return -1;
+        }
+        
+        uint32_t found_inode = 0;
+        if (ext2_search_directory(&inode, token, &found_inode) < 0) {
+            kprintf_both("[ext2] ERROR: '%s' not found\n", token);
+            return -1;
+        }
+        
+        current_inode = found_inode;
+        token = strtok(NULL, "/");
+    }
+    
+    *inode_num = current_inode;
+    return 0;
+}
+
+/**
+ * @brief Search directory for filename
+ */
+static int ext2_search_directory(ext2_inode_t *dir_inode, const char *name, uint32_t *found_inode) {
+    uint32_t dir_size = dir_inode->i_size;
+    uint32_t bytes_read = 0;
+    
+    uint8_t *dir_buf = (uint8_t*)kalloc(dir_size);
+    if (!dir_buf) {
+        kprintf_both("[ext2] ERROR: Failed to allocate directory buffer\n");
+        return -1;
+    }
+    
+    if (ext2_read_inode_data(dir_inode, 0, dir_buf, dir_size) < 0) {
+        kfree(dir_buf);
+        return -1;
+    }
+    
+    while (bytes_read < dir_size) {
+        ext2_dirent_t *entry = (ext2_dirent_t*)(dir_buf + bytes_read);
+        
+        if (entry->inode == 0) {
+            bytes_read += entry->rec_len;
+            continue;
+        }
+        
+        if (entry->name_len == strlen(name) && 
+            memcmp(entry->name, name, entry->name_len) == 0) {
+            *found_inode = entry->inode;
+            klogf("[ext2] Found '%s' -> inode %u\n", name, entry->inode);
+            kfree(dir_buf);
+            return 0;
+        }
+        
+        bytes_read += entry->rec_len;
+    }
+    
+    kfree(dir_buf);
     return -1;
 }
 
-static int ext2_find_inode_by_path(const char *path, uint32_t *inode_num) {
-    // TODO: Phase 4
-    (void)path; (void)inode_num;
-    return -1;
+/**
+ * @brief Read data from inode
+ */
+static int ext2_read_inode_data(ext2_inode_t *inode, uint32_t offset, void *buf, size_t count) {
+    if (offset >= inode->i_size) {
+        return 0;  // EOF
+    }
+    
+    if (offset + count > inode->i_size) {
+        count = inode->i_size - offset;
+    }
+    
+    uint32_t bytes_read = 0;
+    uint8_t *out = (uint8_t*)buf;
+    
+    uint8_t *block_buf = (uint8_t*)kalloc(ext2_state.block_size);
+    if (!block_buf) {
+        return -1;
+    }
+    
+    while (bytes_read < count) {
+        uint32_t file_block = (offset + bytes_read) / ext2_state.block_size;
+        uint32_t offset_in_block = (offset + bytes_read) % ext2_state.block_size;
+        uint32_t bytes_to_read = ext2_state.block_size - offset_in_block;
+        
+        if (bytes_to_read > count - bytes_read) {
+            bytes_to_read = count - bytes_read;
+        }
+        
+        uint32_t disk_block = ext2_get_block_number(inode, file_block);
+        if (disk_block == 0) {
+            memset(out + bytes_read, 0, bytes_to_read);
+        } else {
+            if (ext2_read_block(disk_block, block_buf) < 0) {
+                kfree(block_buf);
+                return -1;
+            }
+            memcpy(out + bytes_read, block_buf + offset_in_block, bytes_to_read);
+        }
+        
+        bytes_read += bytes_to_read;
+    }
+    
+    kfree(block_buf);
+    return bytes_read;
+}
+
+/**
+ * @brief Get disk block number for file block
+ */
+static uint32_t ext2_get_block_number(ext2_inode_t *inode, uint32_t file_block) {
+    uint32_t ptrs_per_block = ext2_state.block_size / sizeof(uint32_t);
+    
+    // Direct blocks (0-11)
+    if (file_block < 12) {
+        return inode->i_block[file_block];
+    }
+    
+    file_block -= 12;
+    
+    // Single indirect (12)
+    if (file_block < ptrs_per_block) {
+        uint32_t indirect_block = inode->i_block[12];
+        if (indirect_block == 0) return 0;
+        
+        uint32_t *indirect_buf = (uint32_t*)kalloc(ext2_state.block_size);
+        if (!indirect_buf) return 0;
+        
+        if (ext2_read_block(indirect_block, indirect_buf) < 0) {
+            kfree(indirect_buf);
+            return 0;
+        }
+        
+        uint32_t block_num = indirect_buf[file_block];
+        kfree(indirect_buf);
+        return block_num;
+    }
+    
+    // Double/triple indirect not implemented
+    kprintf_both("[ext2] ERROR: Double/triple indirect not implemented\n");
+    return 0;
 }
 
 // ----------------- Registration -----------------
 
 int ext2_register(void) {
-    kprintf("[ext2] Registering EXT2 filesystem driver...\n");
+    kprintf_both("[ext2] Registering EXT2 filesystem driver...\n");
     int ret = vfs_register_fs(&ext2_ops);
     if (ret == 0) {
-        kprintf("[ext2] Registration successful!\n");
+        kprintf_both("[ext2] Registration successful!\n");
         return 0;
     } else {
-        kprintf("[ext2] Registration failed (code %d)\n", ret);
+        kprintf_both("[ext2] Registration failed (code %d)\n", ret);
         return -1;
     }
 }
