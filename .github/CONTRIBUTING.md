@@ -2,6 +2,9 @@
 
 Thank you for your interest in contributing to HorizonOS! Whether you're fixing bugs, adding features, improving documentation, or just asking questions, your contributions are welcome.
 
+> [!TIP]
+> Contributions in C++ and other languages outside of C, Assembly, and Shell are **not** accepted into the project at this time.
+
 ## Getting Started
 
 ### Prerequisites
@@ -9,7 +12,7 @@ Thank you for your interest in contributing to HorizonOS! Whether you're fixing 
 Before you can build and work on HorizonOS, you'll need:
 
 - **A UNIX-like development environment**
-    * MacOS (At least Sequoia)
+    * MacOS (Newer versions preferred)
     * Linux
 - **Build tools:**
     * `i686-elf-gcc` toolchain
@@ -17,7 +20,7 @@ Before you can build and work on HorizonOS, you'll need:
     * `xorriso`
     * `grub`
 - **QEMU** for testing (or real hardware if you're brave)
-    * __QEMU host must be i386__
+    * the `qemu-system` target is `i386`
 - **Git** for version control
 - **Doxygen** for documentation generation
 
@@ -79,9 +82,10 @@ Keep in mind HorizonOS is experimental and focused on learning/exploration, so n
 
 1. **Fork** the repository and create a branch (`feature/cool-thing` or `fix/broken-thing`)
 2. **Write clear commits:** Each commit should do one logical thing
+
 ```
-   Good: "pmm: Fix off-by-one error in frame allocation"
-   Bad: "fixed stuff"
+Good: "pmm: Fix off-by-one error in frame allocation"
+Bad: "fixed stuff"
 ```
 3. **Test your changes** in QEMU (and on real hardware if possible)
 4. **Update documentation** if you're changing behavior or adding features
@@ -98,7 +102,7 @@ Documentation contributions are **just as valuable** as code! You can help by:
 - Documenting undocumented features
 - Fixing typos and grammar
 
-We also use Doxygen for docs, be sure to leaf through your new docs in a new doxygen build before contributing.
+We also use Doxygen for docs, be sure to review your new docs in a new doxygen build before contributing.
 
 ## Code of Conduct
 
