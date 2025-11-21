@@ -4,6 +4,7 @@
  */
 
 #include "ata.h"
+#include "blkdev.h"
 #include "kernel/io.h"
 #include "kernel/log.h"
 #include "libk/kprint.h"
@@ -35,6 +36,57 @@ static int ata_wait_ready(void) {
     
     return -1;
 }
+
+/**
+ * @brief 
+ * 
+ * @param dev 
+ * @param lba 
+ * @param buffer 
+ * @param count 
+ * @return int 
+ */
+static int ata_blkdev_read(blkdev_t *dev, uint32_t lba, uint8_t *buffer, uint32_t count) {
+    (void)dev;
+    return ata_read_sectors(lba, count, buffer);
+}
+
+/**
+ * @brief 
+ * 
+ * @param dev 
+ * @param lba 
+ * @param buffer 
+ * @param count 
+ * @return int 
+ */
+static int ata_blkdev_write(blkdev_t *dev, uint32_t lba, const uint8_t *buffer, uint32_t count) {
+    (void)dev;
+    // Write one sector at a time for now
+    for (uint32_t i = 0; i < count; i++) {
+        if (ata_write_sector(lba + i, buffer + (i * 512)) < 0) {
+            return i;
+        }
+    }
+    return count;
+}
+
+/**
+ * @brief 
+ * 
+ * @param dev 
+ * @return uint32_t 
+ */
+static uint32_t ata_blkdev_get_capacity(blkdev_t *dev) {
+    (void)dev;
+    return ata_get_capacity();
+}
+
+static blkdev_ops_t ata_blkdev_ops = {
+    .read = ata_blkdev_read,
+    .write = ata_blkdev_write,
+    .get_capacity = ata_blkdev_get_capacity,
+};
 
 /**
  * @brief Wait for Data Request Ready (DRQ) bit
@@ -140,10 +192,13 @@ int ata_init(void) {
     
     drive_initialized = true;
     
-    klogf("[ata] Drive detected: %s\n", drive_model);
-    klogf("[ata] Capacity: %u sectors (%u MB)\n", 
-          drive_capacity, (drive_capacity * 512) / (1024 * 1024));
-    
+    blkdev_t *dev = blkdev_register("hda", &ata_blkdev_ops, NULL);
+    if (!dev) {
+        klogf("[ata] Failed to register block device!\n");
+        return -1;
+    }
+
+    klogf("[ata] Registered as /dev/hda\n");
     return 0;
 }
 
@@ -208,13 +263,56 @@ int ata_read_sectors(uint32_t lba, uint8_t count, uint8_t *buffer) {
 }
 
 int ata_write_sector(uint32_t lba, const uint8_t *buffer) {
-    (void)lba;
-    (void)buffer;
+    if (!drive_initialized) {
+        klogf("[ata] Driver not initialized!\n");
+        return -1;
+    }
+
+    if (lba >= drive_capacity) {
+        klogf("[ata] LBA %u out of range (max %u)\n", lba, drive_capacity - 1);
+        return -1;
+    }
+
+    // Wait for drive to be ready (major important)
+    if (ata_wait_ready() < 0) {
+        return -1;
+    }
     
-    klogf("[ata] Write support not implemented yet!\n");
-    // TODO: Implement write (similar to read, but with WRITE command)
+    // Select master drive + LBA mode + highest 4 bits of LBA
+    outb(ATA_PRIMARY_IO + ATA_REG_DRIVE, 
+         0xE0 | ((lba >> 24) & 0x0F));
     
-    return -1;
+    // Send sector count (1 sector)
+    outb(ATA_PRIMARY_IO + ATA_REG_SECCOUNT, 1);
+    
+    // Send LBA address
+    outb(ATA_PRIMARY_IO + ATA_REG_LBA_LOW,  lba & 0xFF);
+    outb(ATA_PRIMARY_IO + ATA_REG_LBA_MID,  (lba >> 8) & 0xFF);
+    outb(ATA_PRIMARY_IO + ATA_REG_LBA_HIGH, (lba >> 16) & 0xFF);
+    
+    // Send WRITE command
+    outb(ATA_PRIMARY_IO + ATA_REG_COMMAND, ATA_CMD_WRITE_PIO);
+    
+    // Wait for drive to be ready for data
+    if (ata_wait_drq() < 0) {
+        return -1;
+    }
+    
+    // Write data (256 words = 512 bytes)
+    const uint16_t *words = (const uint16_t*)buffer;
+    for (int i = 0; i < 256; i++) {
+        outw(ATA_PRIMARY_IO + ATA_REG_DATA, words[i]);
+    }
+    
+    // Flush cache to ensure data is written
+    outb(ATA_PRIMARY_IO + ATA_REG_COMMAND, ATA_CMD_CACHE_FLUSH);
+    
+    // Wait for flush to complete
+    if (ata_wait_ready() < 0) {
+        return -1;
+    }
+    
+    return 0;
 }
 
 bool ata_drive_present(void) {
