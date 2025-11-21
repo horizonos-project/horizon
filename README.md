@@ -2,10 +2,13 @@
 
 [![GitHub top language](https://img.shields.io/github/languages/top/horizonos-project/horizon?logo=c&label=)](https://github.com/horizonos-project/horizon/blob/main/Makefile)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/horizonos-project/horizon)](https://github.com/horizonos-project/horizon/commits)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/d694b6fd6b7440e3b4cf494f65a6ab71)](https://app.codacy.com/gh/horizonos-project/horizon/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
-Horizon OS (sometimes 'HorizonOS' or 'Horizon') is a 32-bit Operating System. Horizon is written mostly in C and Intel Assembly. This exists as a side project, something to work on semi-frequently to see if something interesting can come from it.
+Horizon OS (sometimes 'HorizonOS' or 'Horizon') is a 32-bit Operating System. Horizon is written mostly in C and AT&T Assembly. This exists as a side project, something to work on semi-frequently to see if something interesting can come from it.
 
-The plan for this system in the future is to be POSIX compliant.
+The plan for this system in the future is to be POSIX compliant and have a clean codebase.
+
+<!-- as of 11/20/2025: the Codacy grade we have is C. This should be B at the minimum. -->  
 
 ## Current Features
 
@@ -18,13 +21,12 @@ And that... is it. It boots, and that's about it for the time being. Over the co
 
 ## Project Status
 
-Horizon is in **very early kernel development**.  
+Horizon is in **early kernel development**.  
 Core goals for the next releases include:
 
-- Interrupt handling (keyboard + timer)
-- Memory manager groundwork
+- User input
 - Minimal userspace shell
-- Potential HorizonOS-specific compiler toolchain
+- HorizonOS Toolchains
 
 ## Project Versioning
 

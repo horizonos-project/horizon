@@ -7,8 +7,8 @@
 
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = "HorizonOS"
-PROJECT_NUMBER         = "0.04"
-PROJECT_BRIEF          = "A hobby operating system - only a little unstable"
+PROJECT_NUMBER         = "pre-0.04"
+PROJECT_BRIEF          = "An experimental x86 OS, unstable but always growing."
 PROJECT_LOGO           = 
 OUTPUT_DIRECTORY       = docs
 CREATE_SUBDIRS         = NO
