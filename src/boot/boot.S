@@ -2,6 +2,7 @@
 //
 // (c) 2025 HorizonOS Project
 // This is Multiboot compliant for use with GRUB
+//
 
 .code32
 
