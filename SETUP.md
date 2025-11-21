@@ -22,25 +22,31 @@ For GCC, it's recommended to use an `i686` or `i386` ELF compiler, these can usu
 
 > **MacOS:** `brew install i686-elf-gcc`
 
-NASM was chosen since it's a portable x86 assembler that can build flat ELF32 assembly using the preferred syntax of this project, Intel Syntax. AT&T Syntax ASM is generally discouraged in this project.
+Compilation and assembly are unified under `i686-elf-*` to minimize dependencies and ensure complete compatibility. This will remain the case in the future once Horizon is self-hosted or building under a different compiler.
 
-Make comes preinstalled across Linux and MacOS. 
+Make comes preinstalled across Linux and MacOS.
 
 ### How about Windows?
 
-Unless you use Windows Subsystem for Linux, this project is not compilable in any Windows x64 or x86 environments.
+Unless you use Windows Subsystem for Linux, this project is not compilable in any Windows x64 or x86 environments. Windows is not built for projects of this nature. Using either a Linux subsystem or a virtual machine is preferred.
 
 ### How about ARM?
 
-ARM is not supported at this time, we can barely handle x86, arm64 might blow up the entire project.
+ARM is not supported at this time, we can barely handle x86, arm64 might blow up the entire project. It may be considered in the far future once this project has more contributors and has more hardware that it can be tested on.
 
 # Building the Project
+
+This project uses Make, since it's insanely straightforward and borderline universal. We will not be switching to another buildsystem unless it becomes absolutely needed.
+
+<!-- Hint, it won't. Linux has been doing this since '91 -->
 
 | Build cmd | What it does |
 | --- | --- |
 | `make raw` | Builds the raw kernel ELF without packing into an ISO. |
 | `make iso` | Builds the kernel and packages it into an ISO alongside some GRUB data. |
 | `make run` | Runs the kernel inside `qemu-system-i386` (builds the kernel if not found) |
+| `make run-iso` | Runs the ISO in `qemu-system-i386` (will build the ISO if missing) |
 | `make debug` | Runs the kernel in the qemu system but in debug mode. |
 | `make rebuild` | Cleans the build directory and rebuilds the kernel ELF. |
+| `make list-src` | Lists all the source files and the targets in the Makefile. |
 | `make clean` | Cleans out the build directory. |

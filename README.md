@@ -14,8 +14,9 @@ The plan for this system in the future is to be POSIX compliant and have a clean
 
 Currently, Horizon has the following features;
  - Booting into 32-bit Protected Mode
- - Registering the EXT2 filesystem
- - Correctly sets up a Stack and hands off to C
+ - Decompressing the initramfs tar archive
+ - Sets up required memory and registers for userland
+ - Runs in a ring3 userland context
 
 And that... is it. It boots, and that's about it for the time being. Over the course of the months of November and December, there are plans to have a semi-stable userland by the beginning of 2026.
 
@@ -26,7 +27,16 @@ Core goals for the next releases include:
 
 - User input
 - Minimal userspace shell
+- Reading/Writing to a filesystem (finally getting out of initramfs)
 - HorizonOS Toolchains
+
+## How to Build Horizon?
+
+Building Horizon is fairly straightforward once you have the required tools for the job. It's explained in greater detail in the provided [SETUP](./SETUP.md) document!
+
+## How can I Contribute?
+
+If you want to contribute, check out the [CONTRIBUTING](./.github/CONTRIBUTING.md) document!
 
 ## Project Versioning
 
