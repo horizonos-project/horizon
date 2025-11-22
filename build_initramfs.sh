@@ -4,7 +4,7 @@ rm -rf initramfs
 mkdir -pv initramfs/{bin,etc}
 
 echo "Hello from initramfs!" > initramfs/hello.txt
-echo "Welcome to HorizonOS, expect many triple-faults in your future :)" > initramfs/etc/motd
+echo "Welcome to HorizonOS, from initramfs?" > initramfs/etc/motd
 
 if [ -f userland/hello.c ]; then
     i686-elf-gcc -nostdlib -nostdinc -ffreestanding -m32 \

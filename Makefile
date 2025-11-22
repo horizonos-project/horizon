@@ -175,18 +175,20 @@ iso: $(KERNEL)
 	@$(RESCUE) -o $(ISO) $(BUILD)/iso
 
 run: raw
+	$(Q)./create_disk.sh
 	@clear
 	@printf "$(BLUE)[RUN]$(RESET) Running kernel in qemu-system-i386...\n"
 	@qemu-system-i386 -kernel $(KERNEL) -m 128M \
-		-drive file=disk.img,format=raw,if=ide \
+		-drive file=build/disk.img,format=raw,if=ide \
 		-serial stdio -display default \
 		-no-reboot -no-shutdown
 
 run-iso: iso
+	$(Q)./create_disk.sh
 	@clear
 	@printf "$(BLUE)[RUN]$(RESET) Running ISO in qemu-system-i386...\n"
 	@qemu-system-i386 -cdrom $(ISO) -m 128M \
-		-drive file=disk.img,format=raw,if=ide \
+		-drive file=build/disk.img,format=raw,if=ide \
 		-serial stdio -display default \
 		-no-reboot -no-shutdown
 
