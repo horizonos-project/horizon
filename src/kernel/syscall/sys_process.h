@@ -282,3 +282,9 @@ uint32_t sys_alarm(uint32_t seconds, uint32_t u2, uint32_t u3, uint32_t u4, uint
     
     return 0;  // No previous alarm
 }
+
+uint32_t sys_clear_vga(uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e) {
+    (void)a; (void)b; (void)c; (void)d; (void)e;
+    vga_clear();
+    return 0;
+}

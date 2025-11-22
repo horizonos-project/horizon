@@ -164,7 +164,7 @@ static uint32_t ext2_get_block_number(ext2_inode_t *inode, uint32_t file_block);
  */
 static int ext2_device_read(uint32_t offset, void *buf, size_t size) {
     if (!ext2_state.device) {
-        kprintf_both("[ext2] ERROR: No device mounted\n");
+        klogf("[ext2] ERROR: No device mounted\n");
         return -1;
     }
     
@@ -174,13 +174,13 @@ static int ext2_device_read(uint32_t offset, void *buf, size_t size) {
     
     uint8_t *temp = (uint8_t*)kalloc(num_sectors * 512);
     if (!temp) {
-        kprintf_both("[ext2] ERROR: Failed to allocate temp buffer\n");
+        klogf("[ext2] ERROR: Failed to allocate temp buffer\n");
         return -1;
     }
     
     int ret = blkdev_read(ext2_state.device, start_sector, temp, num_sectors);
     if (ret < 0) {
-        kprintf_both("[ext2] ERROR: Block device read failed\n");
+        klogf("[ext2] ERROR: Block device read failed\n");
         kfree(temp);
         return -1;
     }
@@ -197,7 +197,7 @@ static int ext2_device_read(uint32_t offset, void *buf, size_t size) {
  */
 static int ext2_read_block(uint32_t block_num, void *buf) {
     if (ext2_state.block_size == 0) {
-        kprintf_both("[ext2] ERROR: Block size not initialized\n");
+        klogf("[ext2] ERROR: Block size not initialized\n");
         return -1;
     }
     
@@ -223,7 +223,7 @@ static fs_ops_t ext2_ops = {
 // ----------------- Filesystem Operations -----------------
 
 static int ext2_init(void) {
-    kprintf_both("[ext2] Initializing ext2 driver...\n");
+    klogf("[ext2] Initializing ext2 driver...\n");
     memset(&ext2_state, 0, sizeof(ext2_state));
     return 0;
 }
@@ -232,18 +232,18 @@ static int ext2_mount(const char *device) {
     kprintf_both("[ext2] Mounting '%s'...\n", device ? device : "(NULL)");
 
     if (ext2_state.mounted) {
-        kprintf_both("[ext2] ERROR: Already mounted\n");
+        klogf("[ext2] ERROR: Already mounted\n");
         return -1;
     }
     
     if (!device) {
-        kprintf_both("[ext2] ERROR: No device specified\n");
+        klogf("[ext2] ERROR: No device specified\n");
         return -1;
     }
     
     ext2_state.device = blkdev_find(device);
     if (!ext2_state.device) {
-        kprintf_both("[ext2] ERROR: Block device '%s' not found\n", device);
+        klogf("[ext2] ERROR: Block device '%s' not found\n", device);
         return -1;
     }
     
@@ -263,7 +263,7 @@ static int ext2_mount(const char *device) {
 }
 
 static void ext2_unmount(void) {
-    kprintf_both("[ext2] Unmounting...\n");
+    klogf("[ext2] Unmounting...\n");
 
     if (ext2_state.block_groups) {
         kfree(ext2_state.block_groups);
@@ -275,10 +275,10 @@ static void ext2_unmount(void) {
 }
 
 static int ext2_open(const char *path, int flags, file_t *file) {
-    kprintf_both("[ext2] open('%s', flags=%d)\n", path, flags);
+    klogf("[ext2] open('%s', flags=%d)\n", path, flags);
     
     if (!ext2_state.mounted) {
-        kprintf_both("[ext2] ERROR: Filesystem not mounted\n");
+        klogf("[ext2] ERROR: Filesystem not mounted\n");
         return -1;
     }
     
@@ -332,13 +332,13 @@ static int ext2_read(file_t *file, void *buf, size_t count) {
 
 static int ext2_write(file_t *file, const void *buf, size_t count) {
     (void)file; (void)buf; (void)count;
-    kprintf_both("[ext2] write() - read-only for now\n");
+    klogf("[ext2] write() - read-only for now\n");
     return -1;
 }
 
 static int ext2_readdir(file_t *dir, dirent_t *entry) {
     (void)dir; (void)entry;
-    kprintf_both("[ext2] readdir() - TODO\n");
+    klogf("[ext2] readdir() - TODO\n");
     return 0;
 }
 
@@ -372,22 +372,22 @@ static int ext2_stat(const char *path, stat_t *st) {
 // ----------------- Helper Functions -----------------
 
 static int ext2_read_superblock(void) {
-    kprintf_both("[ext2] Reading superblock at offset %d...\n", EXT2_SUPER_BLOCK_OFFSET);
+    klogf("[ext2] Reading superblock at offset %d...\n", EXT2_SUPER_BLOCK_OFFSET);
     
     if (ext2_device_read(EXT2_SUPER_BLOCK_OFFSET, 
                          &ext2_state.superblock, 
                          sizeof(ext2_superblock_t)) < 0) {
-        kprintf_both("[ext2] ERROR: Failed to read superblock\n");
+        klogf("[ext2] ERROR: Failed to read superblock\n");
         return -1;
     }
     
     if (ext2_state.superblock.s_magic != EXT2_SUPER_MAGIC) {
-        kprintf_both("[ext2] ERROR: Invalid magic number 0x%x (expected 0x%x)\n",
+        klogf("[ext2] ERROR: Invalid magic number 0x%x (expected 0x%x)\n",
                 ext2_state.superblock.s_magic, EXT2_SUPER_MAGIC);
         return -1;
     }
     
-    kprintf_both("[ext2] Valid EXT2 filesystem detected!\n");
+    klogf("[ext2] Valid EXT2 filesystem detected!\n");
     
     ext2_state.block_size = 1024 << ext2_state.superblock.s_log_block_size;
     ext2_state.inodes_per_group = ext2_state.superblock.s_inodes_per_group;
@@ -397,18 +397,18 @@ static int ext2_read_superblock(void) {
         (ext2_state.superblock.s_blocks_count + ext2_state.blocks_per_group - 1) 
         / ext2_state.blocks_per_group;
     
-    kprintf_both("[ext2] Block size: %u bytes\n", ext2_state.block_size);
-    kprintf_both("[ext2] Total blocks: %u\n", ext2_state.superblock.s_blocks_count);
-    kprintf_both("[ext2] Total inodes: %u\n", ext2_state.superblock.s_inodes_count);
-    kprintf_both("[ext2] Inodes per group: %u\n", ext2_state.inodes_per_group);
-    kprintf_both("[ext2] Blocks per group: %u\n", ext2_state.blocks_per_group);
-    kprintf_both("[ext2] Block groups: %u\n", ext2_state.num_block_groups);
+    klogf("[ext2] Block size: %u bytes\n", ext2_state.block_size);
+    klogf("[ext2] Total blocks: %u\n", ext2_state.superblock.s_blocks_count);
+    klogf("[ext2] Total inodes: %u\n", ext2_state.superblock.s_inodes_count);
+    klogf("[ext2] Inodes per group: %u\n", ext2_state.inodes_per_group);
+    klogf("[ext2] Blocks per group: %u\n", ext2_state.blocks_per_group);
+    klogf("[ext2] Block groups: %u\n", ext2_state.num_block_groups);
     
     return 0;
 }
 
 static int ext2_read_bgd_table(void) {
-    kprintf_both("[ext2] Reading block group descriptor table...\n");
+    klogf("[ext2] Reading block group descriptor table...\n");
     
     uint32_t bgd_block = (ext2_state.block_size == 1024) ? 2 : 1;
     uint32_t bgd_offset = bgd_block * ext2_state.block_size;
@@ -416,26 +416,26 @@ static int ext2_read_bgd_table(void) {
     size_t bgd_table_size = ext2_state.num_block_groups * sizeof(ext2_bgd_t);
     ext2_state.block_groups = (ext2_bgd_t*)kalloc(bgd_table_size);
     if (!ext2_state.block_groups) {
-        kprintf_both("[ext2] ERROR: Failed to allocate BGD table\n");
+        klogf("[ext2] ERROR: Failed to allocate BGD table\n");
         return -1;
     }
     
     if (ext2_device_read(bgd_offset, ext2_state.block_groups, bgd_table_size) < 0) {
-        kprintf_both("[ext2] ERROR: Failed to read BGD table\n");
+        klogf("[ext2] ERROR: Failed to read BGD table\n");
         kfree(ext2_state.block_groups);
         ext2_state.block_groups = NULL;
         return -1;
     }
     
-    kprintf_both("[ext2] BGD table loaded (%u groups)\n", ext2_state.num_block_groups);
+    klogf("[ext2] BGD table loaded (%u groups)\n", ext2_state.num_block_groups);
     
     ext2_bgd_t *bg0 = &ext2_state.block_groups[0];
-    kprintf_both("[ext2] Block Group 0:\n");
-    kprintf_both("  Block bitmap: block %u\n", bg0->bg_block_bitmap);
-    kprintf_both("  Inode bitmap: block %u\n", bg0->bg_inode_bitmap);
-    kprintf_both("  Inode table:  block %u\n", bg0->bg_inode_table);
-    kprintf_both("  Free blocks:  %u\n", bg0->bg_free_blocks_count);
-    kprintf_both("  Free inodes:  %u\n", bg0->bg_free_inodes_count);
+    klogf("[ext2] Block Group 0:\n");
+    klogf("  Block bitmap: block %u\n", bg0->bg_block_bitmap);
+    klogf("  Inode bitmap: block %u\n", bg0->bg_inode_bitmap);
+    klogf("  Inode table:  block %u\n", bg0->bg_inode_table);
+    klogf("  Free blocks:  %u\n", bg0->bg_free_blocks_count);
+    klogf("  Free inodes:  %u\n", bg0->bg_free_inodes_count);
     
     return 0;
 }
@@ -452,7 +452,7 @@ static int ext2_read_bgd_table(void) {
  */
 static int ext2_read_inode(uint32_t inode_num, ext2_inode_t *inode) {
     if (inode_num == 0) {
-        kprintf_both("[ext2] ERROR: Invalid inode 0\n");
+        klogf("[ext2] ERROR: Invalid inode 0\n");
         return -1;
     }
     
@@ -464,7 +464,7 @@ static int ext2_read_inode(uint32_t inode_num, ext2_inode_t *inode) {
     uint32_t local_inode_index = inode_index % ext2_state.inodes_per_group;
     
     if (block_group >= ext2_state.num_block_groups) {
-        kprintf_both("[ext2] ERROR: Inode %u out of range\n", inode_num);
+        klogf("[ext2] ERROR: Inode %u out of range\n", inode_num);
         return -1;
     }
     
@@ -483,12 +483,12 @@ static int ext2_read_inode(uint32_t inode_num, ext2_inode_t *inode) {
     // Read the block containing the inode
     uint8_t *block_buf = (uint8_t*)kalloc(ext2_state.block_size);
     if (!block_buf) {
-        kprintf_both("[ext2] ERROR: Failed to allocate inode read buffer\n");
+        klogf("[ext2] ERROR: Failed to allocate inode read buffer\n");
         return -1;
     }
     
     if (ext2_read_block(inode_table_block + block_offset, block_buf) < 0) {
-        kprintf_both("[ext2] ERROR: Failed to read inode table block\n");
+        klogf("[ext2] ERROR: Failed to read inode table block\n");
         kfree(block_buf);
         return -1;
     }
@@ -509,7 +509,7 @@ static int ext2_read_inode(uint32_t inode_num, ext2_inode_t *inode) {
  */
 static int ext2_find_inode_by_path(const char *path, uint32_t *inode_num) {
     if (!path || path[0] != '/') {
-        kprintf_both("[ext2] ERROR: Path must be absolute\n");
+        klogf("[ext2] ERROR: Path must be absolute\n");
         return -1;
     }
     
@@ -536,13 +536,13 @@ static int ext2_find_inode_by_path(const char *path, uint32_t *inode_num) {
         }
         
         if ((inode.i_mode & EXT2_S_IFDIR) == 0) {
-            kprintf_both("[ext2] ERROR: Not a directory\n");
+            klogf("[ext2] ERROR: Not a directory\n");
             return -1;
         }
         
         uint32_t found_inode = 0;
         if (ext2_search_directory(&inode, token, &found_inode) < 0) {
-            kprintf_both("[ext2] ERROR: '%s' not found\n", token);
+            klogf("[ext2] ERROR: '%s' not found\n", token);
             return -1;
         }
         
@@ -563,7 +563,7 @@ static int ext2_search_directory(ext2_inode_t *dir_inode, const char *name, uint
     
     uint8_t *dir_buf = (uint8_t*)kalloc(dir_size);
     if (!dir_buf) {
-        kprintf_both("[ext2] ERROR: Failed to allocate directory buffer\n");
+        klogf("[ext2] ERROR: Failed to allocate directory buffer\n");
         return -1;
     }
     
@@ -674,20 +674,20 @@ static uint32_t ext2_get_block_number(ext2_inode_t *inode, uint32_t file_block) 
     }
     
     // Double/triple indirect not implemented
-    kprintf_both("[ext2] ERROR: Double/triple indirect not implemented\n");
+    klogf("[ext2] ERROR: Double/triple indirect not implemented\n");
     return 0;
 }
 
 // ----------------- Registration -----------------
 
 int ext2_register(void) {
-    kprintf_both("[ext2] Registering EXT2 filesystem driver...\n");
+    klogf("[ext2] Registering EXT2 filesystem driver...\n");
     int ret = vfs_register_fs(&ext2_ops);
     if (ret == 0) {
-        kprintf_both("[ext2] Registration successful!\n");
+        klogf("[ext2] Registration successful!\n");
         return 0;
     } else {
-        kprintf_both("[ext2] Registration failed (code %d)\n", ret);
+        klogf("[ext2] Registration failed (code %d)\n", ret);
         return -1;
     }
 }

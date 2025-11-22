@@ -8,7 +8,7 @@ static blkdev_t devices[BLKDEV_MAX_DEVICES];
 
 void blkdev_init(void) {
     memset(devices, 0, sizeof(devices));
-    kprintf("[blkdev] Block device layer initialized\n");
+    klogf("[blkdev] Block device layer initialized\n");
 }
 
 blkdev_t* blkdev_register(const char *name, blkdev_ops_t *ops, void *driver_data) {
@@ -21,7 +21,7 @@ blkdev_t* blkdev_register(const char *name, blkdev_ops_t *ops, void *driver_data
             devices[i].capacity = ops->get_capacity(&devices[i]);
             devices[i].in_use = true;
             
-            kprintf("[blkdev] Registered device '%s' (%u sectors)\n", 
+            klogf("[blkdev] Registered device '%s' (%u sectors)\n", 
                     name, devices[i].capacity);
             return &devices[i];
         }
@@ -33,14 +33,14 @@ blkdev_t* blkdev_find(const char *name) {
     klogf("[blkdev] Looking for device '%s'\n", name);
     for (int i = 0; i < BLKDEV_MAX_DEVICES; i++) {
         if (devices[i].in_use) {
-            klogf("[blkdev]   Checking device '%s'\n", devices[i].name);
+            klogf("[blkdev] Checking device '%s'\n", devices[i].name);
         }
         if (devices[i].in_use && strcmp(devices[i].name, name) == 0) {
-            klogf("[blkdev]   Found!\n");
+            klogf("[blkdev] Found!\n");
             return &devices[i];
         }
     }
-    klogf("[blkdev]   Not found!\n");
+    klogf("[blkdev] Not found!\n");
     return NULL;
 }
 

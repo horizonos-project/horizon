@@ -12,15 +12,15 @@ static uint32_t heap_end = 0;
 static uint32_t heap_current = 0;
 
 void kheap_init(void) {
-    kprintf_both("[heap] Initializing kernel heap...\n");
+    klogf("[heap] Initializing kernel heap...\n");
     
     heap_start = HEAP_START;
     heap_current = heap_start;
     heap_end = heap_start;  // Will grow on demand
     
-    kprintf_both("[heap] Heap virtual address: 0x%08x\n", heap_start);
-    kprintf_both("[heap] Maximum size: %u MB\n", HEAP_MAX_SIZE / (1024 * 1024));
-    kprintf_both("[heap] Kernel heap initialized\n");
+    klogf("[heap] Heap virtual address: 0x%08x\n", heap_start);
+    klogf("[heap] Maximum size: %u MB\n", HEAP_MAX_SIZE / (1024 * 1024));
+    klogf("[heap] Kernel heap initialized\n");
 }
 
 void* kalloc(size_t size) {
@@ -35,14 +35,14 @@ void* kalloc(size_t size) {
     while (heap_current + size > heap_end) {
         // Check max size
         if (heap_end >= heap_start + HEAP_MAX_SIZE) {
-            kprintf_both("[heap] ERROR: Heap exhausted (max %u MB reached)\n",
+            klogf("[heap] ERROR: Heap exhausted (max %u MB reached)\n",
                   HEAP_MAX_SIZE / (1024 * 1024));
             return NULL;
         }
         
         // Allocate and map one more page
         if (!vmm_alloc_page(heap_end, PAGE_PRESENT | PAGE_RW)) {
-            kprintf_both("[heap] ERROR: Failed to allocate page for heap\n");
+            klogf("[heap] ERROR: Failed to allocate page for heap\n");
             return NULL;
         }
         
@@ -52,7 +52,7 @@ void* kalloc(size_t size) {
         static uint32_t last_log_size = 0;
         uint32_t current_size = heap_end - heap_start;
         if (current_size - last_log_size >= 64 * 1024) {  // Log every 64KB
-            kprintf_both("[heap] Grew to %u KB\n", current_size / 1024);
+            klogf("[heap] Grew to %u KB\n", current_size / 1024);
             last_log_size = current_size;
         }
     }

@@ -328,15 +328,16 @@ uint32_t ata_get_capacity(void) {
     return drive_capacity;
 }
 
+// Outputs both to VGA and serial (debug)
 void ata_print_info(void) {
     if (!drive_initialized) {
-        kprintf("[ata] No drive initialized\n");
+        kprintf_both("[ata] No drive initialized\n");
         return;
     }
     
-    kprintf("[ata] === Drive Information ===\n");
-    kprintf("[ata] Model: %s\n", drive_model);
-    kprintf("[ata] Capacity: %u sectors\n", drive_capacity);
-    kprintf("[ata] Size: %u MB\n", (drive_capacity * 512) / (1024 * 1024));
-    kprintf("[ata] ===========================\n");
+    kprintf_both("[ata] === Drive Information ===\n");
+    kprintf_both("[ata] Model: %s\n", drive_model);
+    kprintf_both("[ata] Capacity: %u sectors\n", drive_capacity);
+    kprintf_both("[ata] Size: %u MB\n", (drive_capacity * 512) / (1024 * 1024));
+    kprintf_both("[ata] ===========================\n");
 }

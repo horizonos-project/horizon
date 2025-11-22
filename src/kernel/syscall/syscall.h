@@ -57,6 +57,9 @@
 /** @brief Adjust program break (heap allocation) */
 #define SYS_BRK     45
 
+/** @brief Clears VGA memory (HorizonOS specific) */
+#define SYS_CLEAR_VGA 200
+
 /**
  * @brief Syscall handler function type
  * 

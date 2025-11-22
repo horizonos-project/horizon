@@ -20,7 +20,7 @@ void jump_to_elf(const char *path) {
     int fd = vfs_open(path, 0);  // flags = 0 (read-only)
     if (fd < 0) {
         klogf("[elf] Failed to open %s (fd=%d)\n", path, fd);
-        panicf("ELF LOAD FAILED");
+        panicf("ELF LOAD FAILED (VFS)");
     }
 
     // Get file size via stat
@@ -28,7 +28,7 @@ void jump_to_elf(const char *path) {
     if (vfs_stat(path, &st) < 0) {
         klogf("[elf] Failed to stat %s\n", path);
         vfs_close(fd);
-        panicf("ELF LOAD FAILED");
+        panicf("ELF LOAD FAILED (STAT_T)");
     }
 
     uint32_t file_size = st.size;
@@ -39,7 +39,7 @@ void jump_to_elf(const char *path) {
     if (!data) {
         klogf("[elf] Failed to allocate %u bytes for %s\n", file_size, path);
         vfs_close(fd);
-        panicf("ELF LOAD FAILED");
+        panicf("ELF LOAD FAILED (BUFFER ALLOC)");
     }
 
     // Read entire file
@@ -48,7 +48,7 @@ void jump_to_elf(const char *path) {
         klogf("[elf] Failed to read %s (got %d bytes)\n", path, bytes_read);
         kfree(data);
         vfs_close(fd);
-        panicf("ELF LOAD FAILED");
+        panicf("ELF LOAD FAILED (FILE READ)");
     }
 
     vfs_close(fd);
@@ -60,7 +60,7 @@ void jump_to_elf(const char *path) {
     if (elf_load(data, file_size, &prog) < 0) {
         klogf("[elf] Failed to load ELF\n");
         kfree(data);
-        panicf("ELF LOAD FAILED");
+        panicf("ELF LOAD FAILED (ELF_PROGRAM_T)");
     }
 
     kfree(data);  // Don't need file buffer anymore
@@ -99,10 +99,10 @@ void jump_to_elf(const char *path) {
 }
 
 void jump_to_usermode(uint32_t user_stack) {
-    kprintf_both("[r3] === Jumping from r0 to r3 ===\n");
-    kprintf_both("[r3] User stack: 0x%08x\n", user_stack);
-    kprintf_both("[r3] Entrypoint: 0x%08x\n", (uint32_t)usermode_entry);
-    kprintf_both("[r3] Preparing iretd stack frame...\n");
+    klogf("[r3] === Jumping from r0 to r3 ===\n");
+    klogf("[r3] User stack: 0x%08x\n", user_stack);
+    klogf("[r3] Entrypoint: 0x%08x\n", (uint32_t)usermode_entry);
+    klogf("[r3] Preparing iretd stack frame...\n");
 
     uint32_t user_code_phys = (uint32_t)pmm_alloc_frame();
     if (!user_code_phys) {
@@ -165,7 +165,7 @@ void usermode_entry(void) {
     while(1) {
         char c = '0' + (counter % 10);
         
-        asm volatile(
+        __asm__ volatile(
             "mov $4, %%eax\n"      // SYS_WRITE
             "mov $1, %%ebx\n"      // stdout
             "lea %0, %%ecx\n"      // address of 'c' (on stack)

@@ -32,7 +32,7 @@ static int num_files = 0;
 
 // Load tar archive into memory
 static void initramfs_load(void *tar_start, size_t tar_size) {
-    kprintf_both("[initramfs] Loading from 0x%08x (size: %u bytes)\n", 
+    klogf("[initramfs] Loading from 0x%08x (size: %u bytes)\n", 
           (uint32_t)tar_start, tar_size);
     
     struct tar_header *header = (struct tar_header*)tar_start;
@@ -41,7 +41,7 @@ static void initramfs_load(void *tar_start, size_t tar_size) {
     while ((void*)header < tar_end && header->name[0] != '\0') {
         // Verify ustar magic
         if (strncmp(header->magic, "ustar", 5) != 0) {
-            kprintf_both("[initramfs] Bad magic at 0x%08x, stopping\n", (uint32_t)header);
+            klogf("[initramfs] Bad magic at 0x%08x, stopping\n", (uint32_t)header);
             break;
         }
         
@@ -68,7 +68,7 @@ static void initramfs_load(void *tar_start, size_t tar_size) {
                 files[num_files].size = size;
                 files[num_files].type = header->typeflag;
                 
-                kprintf_both("[initramfs] [%d] %s (%u bytes, type '%c')\n",
+                klogf("[initramfs] [%d] %s (%u bytes, type '%c')\n",
                       num_files, files[num_files].name, size, header->typeflag);
                 
                 num_files++;
@@ -80,14 +80,14 @@ static void initramfs_load(void *tar_start, size_t tar_size) {
         header = (struct tar_header*)((uint8_t*)header + 512 + (blocks * 512));
     }
     
-    kprintf_both("[initramfs] Loaded %d files\n", num_files);
+    klogf("[initramfs] Loaded %d files\n", num_files);
 }
 
 // VFS operations
 static int initramfs_open(const char *path, int flags, file_t *file) {
     (void)flags;
     
-    kprintf_both("[initramfs] open('%s')\n", path);
+    klogf("[initramfs] open('%s')\n", path);
     
     for (int i = 0; i < num_files; i++) {
         if (strcmp(files[i].name, path) == 0) {
@@ -95,13 +95,13 @@ static int initramfs_open(const char *path, int flags, file_t *file) {
             if (files[i].type == '0' || files[i].type == '\0') {
                 file->fs_data = (void*)&files[i];
                 file->offset = 0;
-                kprintf_both("[initramfs] Found file: %s\n", files[i].name);
+                klogf("[initramfs] Found file: %s\n", files[i].name);
                 return 0;
             }
         }
     }
     
-    kprintf_both("[initramfs] File not found: %s\n", path);
+    klogf("[initramfs] File not found: %s\n", path);
     return -1;
 }
 
@@ -162,13 +162,13 @@ void initramfs_init(void) {
     
     size_t size = (size_t)(initramfs_end - initramfs_start);
     
-    kprintf_both("[initramfs] Initializing...\n");
-    kprintf_both("[initramfs] Start: 0x%08x, End: 0x%08x\n", 
+    klogf("[initramfs] Initializing...\n");
+    klogf("[initramfs] Start: 0x%08x, End: 0x%08x\n", 
           (uint32_t)initramfs_start, (uint32_t)initramfs_end);
-    kprintf_both("[initramfs] Size: %u bytes\n", size);
+    klogf("[initramfs] Size: %u bytes\n", size);
     
     if (size == 0) {
-        kprintf_both("[initramfs] WARNING: No initramfs data found!\n");
+        klogf("[initramfs] WARNING: No initramfs data found!\n");
         return;
     }
     
@@ -177,5 +177,5 @@ void initramfs_init(void) {
     
     // Register with VFS
     vfs_register_fs(&initramfs_ops);
-    kprintf_both("[initramfs] Registered with VFS\n");
+    klogf("[initramfs] Registered with VFS\n");
 }

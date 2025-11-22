@@ -1,5 +1,9 @@
 // This is a hello program that exists in Horizon's userland
 // This is just a test binary, don't mind it :P
+//
+//
+// This program is no longer in use. (November 22, 2025)
+
 #define SYS_EXIT   1
 #define SYS_READ   3
 #define SYS_WRITE  4
@@ -7,6 +11,7 @@
 #define SYS_CLOSE  6
 #define SYS_GETPID 20
 #define SYS_BRK    45
+#define SYS_CLEAR_VGA 200
 
 static inline int syscall1(int num, int arg1) {
     int ret;
@@ -57,6 +62,10 @@ static inline int getpid(void) {
 
 static inline unsigned int brk(unsigned int addr) {
     return syscall5(SYS_BRK, addr, 0, 0, 0, 0);
+}
+
+static inline unsigned int clear() {
+    return syscall5(SYS_CLEAR_VGA, 0, 0, 0, 0, 0);
 }
 
 // Simple string functions
@@ -118,5 +127,6 @@ void _start(void) {
     close(motd_fd);
 
     print("Exiting cleanly...\n");
+    clear();
     exit(0);
 }

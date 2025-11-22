@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 #include "drivers/fs/initramfs.h"
 #include "drivers/vfs/vfs.h"
 #include "kernel/io.h"
@@ -30,11 +31,14 @@ extern void kheap_init(void);
 extern void *kalloc(uint32_t size);
 extern void kfree(void *ptr);
 
+// Userland flag
+bool userland = false;
+
 // This is potentially no longer *needed* but keep it around just in case.
 void dump_eflags(const char *msg) {
     uint32_t eflags;
     __asm__ volatile("pushf; pop %0" : "=r"(eflags));
-    kprintf_both("%s: EFLAGS=0x%08x IF=%u\n",
+    klogf("%s: EFLAGS=0x%08x IF=%u\n",
             msg, eflags, (eflags >> 9) & 1);
 }
 

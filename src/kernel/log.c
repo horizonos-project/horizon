@@ -10,9 +10,9 @@ void log_init(void) {
     kset_sink(log_serial_putc);
     kprintf("[log] Serial sink ready\n");
 
-    kset_sink(log_vga_putc);
-    kprintf("[ok] Logging initialized.\n");
-    kprintf("[ok] VGA/Serial ready.\n");
+    // kset_sink(log_vga_putc);
+    // kprintf("[ok] Logging initialized.\n");
+    // kprintf("[ok] VGA/Serial ready.\n");
 }
 
 // Print to both VGA + serial safely
@@ -28,34 +28,22 @@ void kprintf_both(const char *fmt, ...)
     kset_sink(log_vga_putc);
     kvprintf(fmt, args);
 
-    // Serial
+    // Restore Serial
     kset_sink(log_serial_putc);
     kvprintf(fmt, args_copy);
-
-    // Restore default (VGA)
-    kset_sink(log_vga_putc);
 
     va_end(args_copy);
     va_end(args);
 }
 
-// Log to both VGA + serial safely
+// Log to serial only
 void klogf(const char *fmt, ...) {
     va_list args1, args2;
 
     va_start(args1, fmt);
     va_copy(args2, args1);
 
-    // VGA
-    kset_sink(log_vga_putc);
-    kvprintf(fmt, args1);
-
-    // Serial
-    kset_sink(log_serial_putc);
     kvprintf(fmt, args2);
-
-    // back to VGA
-    kset_sink(log_vga_putc);
 
     va_end(args1);
     va_end(args2);

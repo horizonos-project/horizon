@@ -28,6 +28,7 @@ void syscall_register_all(void) {
     syscall_register(SYS_EXECVE,    sys_execve);
     syscall_register(SYS_BRK,       sys_brk);
     syscall_register(SYS_ALARM,     sys_alarm);
+    syscall_register(SYS_CLEAR_VGA, sys_clear_vga);
 }
 
 void syscall_init(void) {
