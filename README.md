@@ -44,10 +44,10 @@ Horizon uses a modified style of [Semantic Versioning](https://semver.org) that 
 
 **X** is the release version tag, if this changes, then massive updates are happening across large amounts of the OS and programs are expected to break or lose functionality unless they conform to the new APIs.
 
-**YY** is the feature version tag, when new features are added (or old features are retired/modified) this will be incremented. Most programs will be fine, but some could break.
+**YY** is the minor release tag, when enough new features are added (or old features are retired/modified) this will be incremented. Most programs will be fine, but some could break. From the deprecation/removal process.
 
-**ZZ** is the patch version tag, when things get small patches, this gets incremented. This shouldn't break most programs, but it could in rare cases.
+**ZZ** is the patch version tag, when things get small patches, or functions get refactored and lots of small changes happen at once; this gets incremented. This shouldn't break most programs, but it could in rare cases. Though mostly at the kernel level and not at the userland level.
 
-**-A** is the bugfix tag, if a release has bugs, they'll be pushed under this tag and should *fix* issues rather than cause them.
+**-A** is the bugfix tag, if a release has bugs, they'll be pushed under this tag and should *fix* issues rather than cause them. Will be used starting at the first major release of Horizon. 1.00.00.
 
-**\[BT\]** is build tag, this is used for non-release releases like Release Candidate (rc) or Beta (b), or some such similar tag.
+**\[BT\]** is build tag, this is used for non-release releases like Release Candidate (rc) or Beta (b), or some such similar tag. Will be used after Horizon 1.00 is public.
