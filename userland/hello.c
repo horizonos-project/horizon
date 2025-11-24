@@ -3,6 +3,8 @@
 //
 //
 // This program is no longer in use. (November 22, 2025)
+// Despite the now archived nature, this will remain since it *compiles*
+// and acts as a nice smoke test in the event newer features break.
 
 #define SYS_EXIT   1
 #define SYS_READ   3

@@ -16,7 +16,9 @@
  * We use Linux-compatible syscall numbers so userspace tools are (somewhat)
  * portable. Not all syscalls are implemented yet - some are stubs!
  * 
- * @note Horizon unique syscalls start at 200!
+ * @note Horizon unique syscalls start at 200 and end at 254. Due to how few
+ *       OS-specific syscalls we will need, I believe 54 is plenty. If we need
+ *       any more... that may complicate things.
  * 
  */
 
