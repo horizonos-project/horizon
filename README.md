@@ -6,9 +6,10 @@
 
 Horizon OS (sometimes 'HorizonOS' or 'Horizon') is a 32-bit Operating System. Horizon is written mostly in C and AT&T Assembly. This exists as a side project, something to work on semi-frequently to see if something interesting can come from it.
 
-The plan for this system in the future is to be POSIX compliant and have a clean codebase.
+The original plan for this OS project was to be extremely in-line with POSIX (IEEE 1003.1-2024), so the goal has been shifted back from "POSIX-Certified" (Meaning that the operating system has been certified to conform to one or more of the various POSIX standards.) to "Mostly POSIX Compliant", much like Linux, alongside a suite of other operating systems.
 
-<!-- as of 11/20/2025: the Codacy grade we have is C. This should be B at the minimum. -->  
+<!-- as of 11/20/2025: the Codacy grade we have is C. This should be B at the minimum. -->
+<!-- as of 11/24/2025: We've made it to B, lets keep it this way! Perhaps A is possible... -->  
 
 ## Current Features
 
@@ -26,7 +27,7 @@ Horizon is in **early kernel development**.
 Core goals for the next releases include:
 
 - User input
-- Minimal userspace shell
+- Minimal userspace shell (WIP: See [hzh](https://github.com/horizonos-project/hzh) for more details)
 - Reading/Writing to a filesystem (finally getting out of initramfs)
 - HorizonOS Toolchains
 
