@@ -90,7 +90,7 @@
 typedef uint32_t (*syscall_t)(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
 
 /** @brief Maximum number of syscalls supported */
-#define MAX_SYSCALLS 256
+#define MAX_SYSCALLS 255
 
 /**
  * @brief Initialize the syscall subsystem
