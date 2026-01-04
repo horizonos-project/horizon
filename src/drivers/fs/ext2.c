@@ -59,6 +59,7 @@ typedef struct {
     uint32_t s_rev_level;         // Revision level
     uint16_t s_def_resuid;        // Default reserved user ID
     uint16_t s_def_resgid;        // Default reserved group ID
+    uint8_t _pad[1024 - 84];
 } __attribute__((packed)) ext2_superblock_t;
 
 /**
