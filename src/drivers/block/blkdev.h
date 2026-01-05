@@ -29,6 +29,7 @@ typedef struct {
 struct blkdev {
     char name[16];              // e.g., "hda", "sda"
     uint32_t capacity;          // Sectors
+    uint32_t start_lba;         // Start of the LBA
     void *driver_data;          // Driver-specific data
     blkdev_ops_t *ops;          // Operations
     bool in_use;
