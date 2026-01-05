@@ -30,13 +30,13 @@ int mbr_parse(uint8_t *mbr_data, partition_entry_t *partitions_out) {
     return 0;
 }
 
-partition_entry_t *mbr_find_ext2(partition_entry_t *partitions) {
-    for (int i = 0; i < 4; i++) {
-        if (partitions[i].partition_type == PART_TYPE_LINUX) {
-            return &partitions[i];
-        }
-    }
+// partition_entry_t *mbr_find_ext2(partition_entry_t *partitions) {
+//     for (int i = 0; i < 4; i++) {
+//         if (partitions[i].partition_type == PART_TYPE_LINUX) {
+//             return &partitions[i];
+//         }
+//     }
 
-    klogf("[mbr] Could not find partitions!\n");
-    for (;;);
-}
+//     klogf("[mbr] Could not find partitions!\n");
+//     for (;;);
+// }
