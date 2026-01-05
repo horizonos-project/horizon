@@ -59,6 +59,7 @@ typedef struct {
     uint32_t s_rev_level;         // Revision level
     uint16_t s_def_resuid;        // Default reserved user ID
     uint16_t s_def_resgid;        // Default reserved group ID
+    uint8_t _pad[1024 - 84];
 } __attribute__((packed)) ext2_superblock_t;
 
 /**
@@ -167,30 +168,33 @@ static int ext2_device_read(uint32_t offset, void *buf, size_t size) {
         klogf("[ext2] ERROR: No device mounted\n");
         return -1;
     }
-    
-    uint32_t start_sector = offset / 512;
-    uint32_t end_sector = (offset + size - 1) / 512;
-    uint32_t num_sectors = end_sector - start_sector + 1;
-    
-    uint8_t *temp = (uint8_t*)kalloc(num_sectors * 512);
+
+    uint32_t first_lba =
+        ext2_state.device->start_lba + (offset / BLKDEV_SECTOR_SIZE);
+
+    uint32_t last_lba =
+        ext2_state.device->start_lba +
+        ((offset + size - 1) / BLKDEV_SECTOR_SIZE);
+
+    uint32_t num_sectors = last_lba - first_lba + 1;
+
+    uint8_t *temp = kalloc(num_sectors * BLKDEV_SECTOR_SIZE);
     if (!temp) {
         klogf("[ext2] ERROR: Failed to allocate temp buffer\n");
         return -1;
     }
-    
-    int ret = blkdev_read(ext2_state.device, start_sector, temp, num_sectors);
-    if (ret < 0) {
+
+    if (blkdev_read(ext2_state.device, first_lba, temp, num_sectors) < 0) {
         klogf("[ext2] ERROR: Block device read failed\n");
         kfree(temp);
         return -1;
     }
-    
-    uint32_t offset_in_sector = offset % 512;
-    memcpy(buf, temp + offset_in_sector, size);
-    
+
+    memcpy(buf, temp + (offset % BLKDEV_SECTOR_SIZE), size);
     kfree(temp);
     return 0;
 }
+
 
 /**
  * @brief Read a filesystem block

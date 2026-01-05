@@ -22,6 +22,7 @@ if [ -f userland/hello.c ]; then
 fi
 
 cd initramfs
+# Specifically purge .DS_Store because macOS contributors exist too!
 tar --format=ustar --exclude='._*' --exclude='.DS_Store' -cf ../initramfs.tar *
 cd ..
 

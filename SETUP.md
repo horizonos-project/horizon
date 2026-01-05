@@ -22,6 +22,9 @@ For GCC, it's recommended to use an `i686` or `i386` ELF compiler, these can usu
 
 > **MacOS:** `brew install i686-elf-gcc`
 
+> [!TIP]
+> For macOS developers, you'll want to also `brew install e2fsprogs` and then force link it `brew link --force e2fsprogs` for the `create_disk` script to work.
+
 Compilation and assembly are unified under `i686-elf-*` to minimize dependencies and ensure complete compatibility. This will remain the case in the future once Horizon is self-hosted or building under a different compiler.
 
 Make comes preinstalled across Linux and MacOS.
