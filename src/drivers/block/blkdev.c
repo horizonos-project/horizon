@@ -12,6 +12,57 @@ void blkdev_init(void) {
     klogf("[blkdev] Block device layer initialized\n");
 }
 
+/**
+ * @brief 
+ */
+static void blkdev_scan_partitions(blkdev_t *disk) {
+    uint8_t sector[512];
+
+    if (blkdev_read(disk, 0, sector, 1) < 0) {
+        kprintf("[part] Failed to read MBR\n");
+        return;
+    }
+
+    mbr_t *mbr = (mbr_t*)sector;
+
+    if (mbr->disk_signature != 0xAA55) {
+        kprintf("[part] No MBR on %s (sig=0x%x)\n",
+                disk->name, mbr->disk_signature);
+        return;
+    }
+
+    kprintf("[part] MBR detected on %s\n", disk->name);
+
+    for (int i = 0; i < 4; i++) {
+        mbr_partition_t *p = &mbr->partitions[i];
+
+        if (p->type == 0 || p->sector_count == 0)
+            continue;
+
+        char name[16];
+        blkdev_make_part_name(name, disk->name, i + 1);
+
+        blkdev_t *part = blkdev_register(
+            name,
+            disk->ops,
+            disk->driver_data
+        );
+
+        if (!part) {
+            kprintf("[part] Failed to register %s\n", name);
+            continue;
+        }
+
+        part->start_lba = p->lba_start;
+        part->capacity  = p->sector_count;
+
+        kprintf("[part] %s: type=0x%x start=%u size=%u\n",
+                name,
+                p->type,
+                p->lba_start,
+                p->sector_count);
+    }
+}
 
 blkdev_t* blkdev_register(const char *name, blkdev_ops_t *ops, void *driver_data) {
     for (int i = 0; i < BLKDEV_MAX_DEVICES; i++) {
