@@ -167,31 +167,41 @@ static int ext2_device_read(uint32_t offset, void *buf, size_t size) {
     if (!ext2_state.device) {
         klogf("[ext2] ERROR: No device mounted\n");
         return -1;
+    } else if (size == 0) {
+        return 0;
     }
 
-    uint32_t first_lba =
-        ext2_state.device->start_lba + (offset / BLKDEV_SECTOR_SIZE);
+    enum { SCRATCH_SECTORS = 8 };
+    enum { SCRATCH_BYTES = SCRATCH_SECTORS * BLKDEV_SECTOR_SIZE };
 
-    uint32_t last_lba =
-        ext2_state.device->start_lba +
-        ((offset + size - 1) / BLKDEV_SECTOR_SIZE);
+    static uint8_t scratch[SCRATCH_BYTES];
 
-    uint32_t num_sectors = last_lba - first_lba + 1;
+    uint8_t *out = (uint8_t*)buf;
 
-    uint8_t *temp = kalloc(num_sectors * BLKDEV_SECTOR_SIZE);
-    if (!temp) {
-        klogf("[ext2] ERROR: Failed to allocate temp buffer\n");
-        return -1;
+    while (size > 0) {
+        uint32_t lba = ext2_state.device->start_lba + (offset / BLKDEV_SECTOR_SIZE);
+        uint32_t sector_off = offset % BLKDEV_MAX_DEVICES;
+
+        size_t want = sector_off + size;
+        uint32_t sectors = (uint32_t)((want + BLKDEV_SECTOR_SIZE - 1) / BLKDEV_SECTOR_SIZE);
+        if (sectors == 0) sectors = 1;
+        if (sectors > SCRATCH_SECTORS) sectors = SCRATCH_SECTORS;
+
+        if (blkdev_read(ext2_state.device, lba, scratch, sectors) < 0) {
+            klogf("[ext2] ERROR: Block device read failed (lba=%u, sectors=%u)\n", lba, sectors);
+            return -1;
+        }
+
+        size_t avail = sectors * BLKDEV_SECTOR_SIZE - sector_off;
+        size_t take = (size < avail) ? size : avail;
+
+        memcpy(out, scratch + sector_off, take);
+
+        out    += take;
+        offset += (uint32_t)take;
+        size   -= take;
     }
 
-    if (blkdev_read(ext2_state.device, first_lba, temp, num_sectors) < 0) {
-        klogf("[ext2] ERROR: Block device read failed\n");
-        kfree(temp);
-        return -1;
-    }
-
-    memcpy(buf, temp + (offset % BLKDEV_SECTOR_SIZE), size);
-    kfree(temp);
     return 0;
 }
 

@@ -13,6 +13,8 @@
 #define PAGE_ACCESSED 0x020
 #define PAGE_DIRTY    0x040
 
+#define IDMAP_LIMIT (16 * 1024 * 1024)
+
 /**
  * @brief Initialize VMM (creates kernel page directory, identity maps low memory, enables paging)
  */

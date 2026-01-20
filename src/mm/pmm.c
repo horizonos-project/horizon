@@ -42,6 +42,7 @@ void pmm_mark_free(uint32_t frame) {
     
     if (test_bit(frame)) {
         clear_bit(frame);
+        used_frames--;
     }
 }
 

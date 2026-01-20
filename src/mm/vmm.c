@@ -4,6 +4,7 @@
 #include "../libk//kprint.h"
 #include "../libk/string.h"
 #include "../kernel/panic.h"
+#include <stdint.h>
 
 typedef struct {
     uint32_t entries[1024];
@@ -16,6 +17,15 @@ typedef struct {
 // Kernel page directory (identity-mapped)
 static page_directory_t *kernel_directory = NULL;
 
+// Helper: Requires a region to be identity mapped
+static inline void vmm_require_idmapped(void *phys, const char *what) {
+    uint32_t p = (uint32_t)phys;
+
+    if (p >= IDMAP_LIMIT) {
+        panicf("[vmm] %s at phys 0x%08x is outside idmap (<0x%08x)\n", what, p, IDMAP_LIMIT);
+    }
+}
+
 // Helper: Get page table for a virtual address, creating if needed
 static page_table_t* get_page_table(uint32_t virt, bool create, uint32_t flags) {
     uint32_t dir_index = virt >> 22;
@@ -24,6 +34,7 @@ static page_table_t* get_page_table(uint32_t virt, bool create, uint32_t flags) 
     if (kernel_directory->entries[dir_index] & PAGE_PRESENT) {
         // Extract physical address of page table
         uint32_t table_phys = kernel_directory->entries[dir_index] & ~0xFFF;
+        vmm_require_idmapped((void*)table_phys, "page table (existing)");
         return (page_table_t*)table_phys;
     }
     
@@ -36,6 +47,7 @@ static page_table_t* get_page_table(uint32_t virt, bool create, uint32_t flags) 
         }
         
         // Clear the page table
+        vmm_require_idmapped(table_phys, "page table");
         memset((void*)table_phys, 0, sizeof(page_table_t));
         
         uint32_t pde_flags = PAGE_PRESENT | PAGE_RW;
@@ -139,12 +151,13 @@ void vmm_init(void) {
     kprintf_both("[vmm] Initalizing Virtual Memory Manager...\n");
 
     kernel_directory = (page_directory_t*)pmm_alloc_frame();
+    vmm_require_idmapped(kernel_directory, "page directory");
     memset(kernel_directory, 0, sizeof(page_directory_t));
 
     kprintf_both("[vmm] Identity mapping 0 -> 16 MB...\n");
 
     for (uint32_t addr = 0; addr < 16 * 1024 * 1024; addr += PAGE_SIZE) {
-        vmm_map_page(addr, addr, PAGE_PRESENT | PAGE_RW | PAGE_USER);
+        vmm_map_page(addr, addr, PAGE_PRESENT | PAGE_RW);
     }
 
     kprintf_both("[vmm] Identity mapping complete!\n");

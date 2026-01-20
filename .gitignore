@@ -46,3 +46,5 @@ initramfs.*
 # Very specific files
 compile_commands.json
 hello
+
+gpg
