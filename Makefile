@@ -70,7 +70,7 @@ BOOT_OBJS   := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(BOOT_SRC:.S=.o))
 KERNEL_OBJS := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(KERNEL_SRC:.c=.o))
 LIBK_OBJS	:= $(patsubst $(SRC_D)/%, $(BUILD)/%, $(LIBK_SRC:.c=.o))
 LIBK_A		:= $(BUILD)/libk/libk.a
-OBJS        := $(BOOT_OBJS) $(LIBK_OBJS) $(KERNEL_OBJS) $(INITRAMFS)
+OBJS        := $(BOOT_OBJS) $(KERNEL_OBJS) $(INITRAMFS)
 
 # -----------------------------------------------------------------------------
 # Flags (optimized for pedantic compiling, legacy asm instructions and 32 bit)
@@ -140,14 +140,16 @@ $(LIBK_A): $(LIBK_OBJS)
 	$(Q)$(AR) rcs $@ $^
 
 # Link kernel ELF
-$(KERNEL): $(OBJS)
+$(KERNEL): $(OBJS) $(LIBK_A)
 	@printf "$(GREEN)[LD ]$(RESET) %s\n" "$@"
-	$(Q)$(LD) $(LDFLAGS) -o $@ $^ 2> build/last_build.log || { \
-		printf "$(RED)[ERR]$(RESET) Linking failed:\n"; \
-		cat build/last_build.log; \
-		$(LD) $(LDFLAGS) -o $@ $^; exit 1; }
+	$(Q)$(LD) $(LDFLAGS) -o $@ $(OBJS) --start-group $(LIBK_A) --end-group \
+		2> build/last_build.log || { \
+			printf "$(RED)[ERR]$(RESET) Linking failed:\n"; \
+			cat build/last_build.log; \
+			exit 1; \
+		}
 	@printf "$(GREEN)[OK!]$(RESET) Kernel linked -> $(KERNEL)\n"
-	@rm -f *.tar
+	@rm -f initramfs.tar
 
 libk: $(LIBK_A)
 	@printf "$(GREEN)[OK!]$(RESET) libk.a built successfully.\n"

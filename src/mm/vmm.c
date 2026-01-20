@@ -32,6 +32,10 @@ static page_table_t* get_page_table(uint32_t virt, bool create, uint32_t flags) 
     
     // Check if page table exists
     if (kernel_directory->entries[dir_index] & PAGE_PRESENT) {
+        if (flags & PAGE_USER) {
+        kernel_directory->entries[dir_index] |= PAGE_USER;
+        }
+
         // Extract physical address of page table
         uint32_t table_phys = kernel_directory->entries[dir_index] & ~0xFFF;
         vmm_require_idmapped((void*)table_phys, "page table (existing)");
