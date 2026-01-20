@@ -210,16 +210,6 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
 
     klogf("[ok] Root filesystem mounted at '/'\n");
 
-    /// TEMPORARY TEST
-    stat_t st;
-    if (vfs_stat("/bin/hello", &st) < 0) {
-        klogf("[panic] /bin/hello not found on root filesystem\n");
-        goto bad_ext2_fs;
-    }
-
-    klogf("[ext2] Found /bin/hello (%u bytes)\n", st.size);
-    /// TEMPORARY TEST
-
     // ========== Phase 5: Ring 3 & Process Setup ==========
 
     uint32_t k_stack = (uint32_t)kalloc(4096);
