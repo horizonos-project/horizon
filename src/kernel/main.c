@@ -192,7 +192,7 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     }
 
     // Initialize initramfs (static data, no heap needed for init)
-    initramfs_init();
+    // initramfs_init();
 
     // Register filesystem drivers
     if (ext2_register() < 0) {
@@ -201,33 +201,24 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     }
     klogf("[ok] ext2 registered successfully.\n");
 
-    // Mount root filesystem (EXT2 if available, else initramfs)
-    if (ata_drive_present()) {
-        klogf("[ext2] Attempting to mount /dev/hda as root...\n");
-        if (vfs_mount("ext2", "hda", "/") < 0) {
-            klogf("[warn] Failed to mount EXT2, falling back to initramfs\n");
-            if (vfs_mount("initramfs", NULL, "/") < 0) {
-                klogf("[fail] Failed to mount initramfs!\n");
-                goto bad_vfs;
-            }
-            klogf("[ok] initramfs mounted at '/'\n");
-        } else {
-            klogf("[ok] EXT2 filesystem mounted at '/'!\n");
-            
-            // Test reading from disk
-            stat_t st;
-            if (vfs_stat("/test.txt", &st) == 0) {
-                klogf("[ext2] Found /test.txt (size: %u bytes)\n", st.size);
-            }
-        }
-    } else {
-        // No disk, use initramfs
-        if (vfs_mount("initramfs", NULL, "/") < 0) {
-            klogf("[fail] Failed to mount initramfs!\n");
-            goto bad_vfs;
-        }
-        klogf("[ok] initramfs mounted at '/'\n");
+    klogf("[ext2] Mounting root filesystem from /dev/hda...\n");
+
+    if (vfs_mount("ext2", "hda", "/") < 0) {
+        klogf("[panic] Failed to mount root filesystem (ext2 on hda)\n");
+        goto bad_ext2_fs;
     }
+
+    klogf("[ok] Root filesystem mounted at '/'\n");
+
+    /// TEMPORARY TEST
+    stat_t st;
+    if (vfs_stat("/bin/hello", &st) < 0) {
+        klogf("[panic] /bin/hello not found on root filesystem\n");
+        goto bad_ext2_fs;
+    }
+
+    klogf("[ext2] Found /bin/hello (%u bytes)\n", st.size);
+    /// TEMPORARY TEST
 
     // ========== Phase 5: Ring 3 & Process Setup ==========
 

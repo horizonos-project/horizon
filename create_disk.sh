@@ -31,3 +31,19 @@ EOF
 
     echo "[disk] Done"
 '
+
+docker run --rm \
+  -v "$PWD:/repo:ro" \
+  -v "$PWD/build:/work" \
+  horizon-fs \
+  bash -lc '
+    set -euo pipefail
+    test -f /repo/initramfs/bin/hello
+
+    debugfs -w -R "write /repo/initramfs/bin/hello /bin/hello" /work/disk.img
+    debugfs -w -R "write /repo/initramfs/etc/motd /etc/motd" /work/disk.img || true
+    debugfs -w -R "write /repo/initramfs/hello.txt /hello.txt" /work/disk.img || true
+
+    debugfs -R "ls -l /bin" /work/disk.img
+  '
+
