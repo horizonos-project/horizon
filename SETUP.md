@@ -14,7 +14,7 @@ To set up HorizonOS for use in an emulator such as qemu (recommended) or on actu
 
 ---
 
-For GCC, it's recommended to use an `i686` or `i386` ELF compiler, these can usually be installed by a package manager;
+For GCC, this project uses the generic `i686-elf` toolchains, which you can install with one of these commands:
 
 > **Arch Linux:** `sudo yay i686-elf-binutils i686-elf-gcc`
 
@@ -25,17 +25,17 @@ For GCC, it's recommended to use an `i686` or `i386` ELF compiler, these can usu
 > [!TIP]
 > For macOS developers, you'll want to also `brew install e2fsprogs` and then force link it `brew link --force e2fsprogs` for the `create_disk` script to work.
 
-Compilation and assembly are unified under `i686-elf-*` to minimize dependencies and ensure complete compatibility. This will remain the case in the future once Horizon is self-hosted or building under a different compiler.
+Compilation and assembly are unified under `i686-elf-*` to minimize dependencies and ensure complete compatibility. This will remain the case for the forseeable future.
 
 Make comes preinstalled across Linux and MacOS.
 
 ### How about Windows?
 
-Unless you use Windows Subsystem for Linux, this project is not compilable in any Windows x64 or x86 environments. Windows is not built for projects of this nature. Using either a Linux subsystem or a virtual machine is preferred.
+Unless you use Windows Subsystem for Linux, this project is not compilable in any Windows x64 or x86 environments. Windows is not built for projects of this nature. Using either a Linux subsystem or a virtual machine is preferred. Attempting to build this kernel with Windows and its tools (`MSVC` and `LINK`) is untested waters and compatibility is NOT guaranteed!
 
 ### How about ARM?
 
-ARM is not supported at this time, we can barely handle x86, arm64 might blow up the entire project. It may be considered in the far future once this project has more contributors and has more hardware that it can be tested on.
+ARM is not supported at this time, we can barely handle x86 at this time, arm64 might blow up the entire project. It may be considered in the far future once this project has more contributors and has more hardware that it can be tested on.
 
 # Building the Project
 

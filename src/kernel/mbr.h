@@ -1,5 +1,8 @@
 // master boot record header
 
+#ifndef MBR_H   
+#define MBR_H
+
 #include <stdint.h>
 
 // Even though we don't use most of these, it's good to know they exist.
@@ -26,8 +29,12 @@ typedef struct {
     uint32_t disk_signature;
     uint16_t reserved;
     partition_entry_t partitions[4];  // The good stuff!
-    uint16_t boot_signature;          // Must be 0x55AA
+    uint16_t boot_signature;          // Must be 0xAA55
 } __attribute__((packed)) mbr_t;
 
 int mbr_parse(uint8_t *mbr_data, partition_entry_t *partitions_out);
 partition_entry_t* mbr_find_ext2(partition_entry_t *partitions);
+
+typedef partition_entry_t mbr_partition_t; // Mild band-aid for blkdev.c. Awesome.
+
+#endif // MBR_H

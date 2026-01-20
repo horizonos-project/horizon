@@ -62,4 +62,9 @@ int blkdev_read(blkdev_t *dev, uint32_t lba, uint8_t *buffer, uint32_t count);
  */
 int blkdev_write(blkdev_t *dev, uint32_t lba, const uint8_t *buffer, uint32_t count);
 
+/**
+ * @brief Create partition name from disk name and partition number
+ */
+void blkdev_make_part_name(char *out, const char *disk_name, int partno);
+
 #endif // BLKDEV_H

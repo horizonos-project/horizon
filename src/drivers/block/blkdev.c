@@ -2,6 +2,7 @@
 #include "libk/string.h"
 #include "libk/kprint.h"
 #include "kernel/log.h"
+#include "kernel/mbr.h"
 #include "../fs/ext2.h"
 #include "kernel/mbr.h"
 
@@ -13,7 +14,8 @@ void blkdev_init(void) {
 }
 
 /**
- * @brief 
+ * @brief
+ * @param
  */
 static void blkdev_scan_partitions(blkdev_t *disk) {
     uint8_t sector[512];
@@ -36,7 +38,7 @@ static void blkdev_scan_partitions(blkdev_t *disk) {
     for (int i = 0; i < 4; i++) {
         mbr_partition_t *p = &mbr->partitions[i];
 
-        if (p->type == 0 || p->sector_count == 0)
+        if (p->partition_type == PART_TYPE_EMPTY || p->sector_count == 0)
             continue;
 
         char name[16];
@@ -58,7 +60,7 @@ static void blkdev_scan_partitions(blkdev_t *disk) {
 
         kprintf("[part] %s: type=0x%x start=%u size=%u\n",
                 name,
-                p->type,
+                p->partition_type,
                 p->lba_start,
                 p->sector_count);
     }
@@ -111,4 +113,23 @@ int blkdev_read(blkdev_t *dev, uint32_t lba, uint8_t *buffer, uint32_t count) {
 int blkdev_write(blkdev_t *dev, uint32_t lba, const uint8_t *buffer, uint32_t count) {
     if (!dev || !dev->ops || !dev->ops->write) return -1;
     return dev->ops->write(dev, lba, buffer, count);
+}
+
+void blkdev_make_part_name(char *out, const char *disk_name, int partno) {
+    // Doing this the old fashioned way since snprintf isn't real
+
+    int i = 0;
+
+    // Disk name
+    while (disk_name[i] && i < 15) {
+        out[i] = disk_name[i];
+        i++;
+    }
+
+    // Partno
+    if (partno >= 0 && partno <= 9 && i < 15) {
+        out[i++] = '0' + partno;
+    }
+
+    out[i] = '\0';
 }

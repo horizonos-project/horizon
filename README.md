@@ -9,7 +9,8 @@ Horizon OS (sometimes 'HorizonOS' or 'Horizon') is a 32-bit Operating System. Ho
 The original plan for this OS project was to be extremely in-line with POSIX (IEEE 1003.1-2024), so the goal has been shifted back from "POSIX-Certified" (Meaning that the operating system has been certified to conform to one or more of the various POSIX standards.) to "Mostly POSIX Compliant", much like Linux, alongside a suite of other operating systems.
 
 <!-- as of 11/20/2025: the Codacy grade we have is C. This should be B at the minimum. -->
-<!-- as of 11/24/2025: We've made it to B, lets keep it this way! Perhaps A is possible... -->  
+<!-- as of 11/24/2025: We've made it to B, lets keep it this way! Perhaps A is possible... -->
+<!-- as of 01/20/2026: We're probably still a big distance away from A. B is still good for an OS -->
 
 ## Current Features
 
@@ -27,7 +28,7 @@ Horizon is in **early kernel development**.
 Core goals for the next releases include:
 
 - User input
-- Minimal userspace shell (WIP: See [hzh](https://github.com/horizonos-project/hzh) for more details)
+- Minimal userspace shell
 - Reading/Writing to a filesystem (finally getting out of initramfs)
 - HorizonOS Toolchains
 
@@ -41,7 +42,7 @@ If you want to contribute, check out the [CONTRIBUTING](./.github/CONTRIBUTING.m
 
 ## Project Versioning
 
-Horizon uses a modified style of [Semantic Versioning](https://semver.org) that follows the structure; `X.YY.ZZ-A-[BT]`
+Horizon uses a modified style of [Semantic Versioning](https://semver.org) that follows the structure; `X.YY.ZZ-A`
 
 **X** is the release version tag, if this changes, then massive updates are happening across large amounts of the OS and programs are expected to break or lose functionality unless they conform to the new APIs.
 
@@ -49,6 +50,4 @@ Horizon uses a modified style of [Semantic Versioning](https://semver.org) that 
 
 **ZZ** is the patch version tag, when things get small patches, or functions get refactored and lots of small changes happen at once; this gets incremented. This shouldn't break most programs, but it could in rare cases. Though mostly at the kernel level and not at the userland level.
 
-**-A** is the bugfix tag, if a release has bugs, they'll be pushed under this tag and should *fix* issues rather than cause them. Will be used starting at the first major release of Horizon. 1.00.00.
-
-**\[BT\]** is build tag, this is used for non-release releases like Release Candidate (rc) or Beta (b), or some such similar tag. Will be used after Horizon 1.00 is public.
+> [!NOTE]**-A** is the bugfix tag, if a release has bugs, they'll be pushed under this tag and should *fix* issues rather than cause them. Will be used starting at the first major release of Horizon. 1.00.00.
