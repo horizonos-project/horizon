@@ -97,4 +97,13 @@ void kprintf(const char *fmt, ...);
  */
 void kvprintf(const char *fmt, va_list args);
 
+/**
+ * @brief Output a single character to the kernel print backend
+ * 
+ * Sends a single character to the currently configured output sink.
+ * 
+ * @param c Character to output
+ */
+void kputc(char c);
+
 #endif // KPRINT_H

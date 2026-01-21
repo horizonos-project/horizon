@@ -6,7 +6,7 @@ void kset_sink(void (*sink)(char)) {
     kputc_sink = sink;
 }
 
-static inline void kputc(char c) {
+void kputc(char c) {
     if (kputc_sink)
         kputc_sink(c);
 }
