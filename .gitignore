@@ -5,6 +5,8 @@
 
 # Docs!
 docs/
+html/
+latex/
 
 # Build directory
 build/
