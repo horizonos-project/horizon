@@ -4,6 +4,7 @@
 #include "../../drivers/video/vga.h"
 #include "../../drivers/serial/serial.h"
 #include "../../drivers/vfs/vfs.h"
+#include "../../drivers/keyboard/keyboard.h"
 #include "mm/mm.h"
 
 uint32_t sys_exit(uint32_t status, uint32_t u2, uint32_t u3, uint32_t u4, uint32_t u5) {
@@ -68,35 +69,55 @@ uint32_t sys_write(uint32_t fd, uint32_t buf, uint32_t count, uint32_t u4, uint3
 
 uint32_t sys_read(uint32_t fd, uint32_t buf, uint32_t count, uint32_t u4, uint32_t u5) {
     (void)u4; (void)u5;
-    
-    // Validate pointer
+
     if (buf == 0) {
         klogf("[syscall] sys_read: NULL buffer\n");
-        return -1;  // EFAULT
+        return (uint32_t)-1;  // EFAULT-ish
     }
-    
+
+    if (count == 0) {
+        return 0;
+    }
+
     char *buffer = (char*)buf;
-    
-    // Handle stdin (fd 0)
+
+    // Handle stdin (fd 0) via keyboard ring buffer
     if (fd == 0) {
-        klogf("[syscall] sys_read: stdin not yet implemented\n");
-        return 0;  // EOF for now
+        uint32_t i = 0;
+
+        // Block until we have at least 1 byte
+        for (;;) {
+            int ch = keyboard_getchar();
+            if (ch >= 0) {
+                buffer[i++] = (char)ch;
+                break;
+            }
+            __asm__ volatile("hlt");
+        }
+
+        // Drain any additional available bytes (non-blocking)
+        while (i < count) {
+            int ch = keyboard_getchar();
+            if (ch < 0) break;
+            buffer[i++] = (char)ch;
+        }
+
+        return i;
     }
-    
+
     if (fd == 1 || fd == 2) {
         klogf("[syscall] sys_read cannot read from stdout/stderr\n");
-        return 0; // EOF
+        return 0;
     }
-    
+
     int bytes_read = vfs_read(fd, buffer, count);
-    
     if (bytes_read < 0) {
         klogf("[syscall] sys_read: vfs_read failed for fd %u\n", fd);
-        return -1;
+        return (uint32_t)-1;
     }
-    
+
     klogf("[syscall] sys_read: read %d bytes from fd %u\n", bytes_read, fd);
-    return bytes_read;
+    return (uint32_t)bytes_read;
 }
 
 uint32_t sys_open(uint32_t pathname, uint32_t flags, uint32_t mode, uint32_t u4, uint32_t u5) {

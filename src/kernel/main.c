@@ -1,24 +1,31 @@
 #include <stdint.h>
 #include <stdbool.h>
-#include "drivers/fs/initramfs.h"
-#include "drivers/vfs/vfs.h"
+
+// Kernel headers & libk
 #include "kernel/io.h"
 #include "kernel/isr.h"
 #include "kernel/pic.h"
 #include "kernel/syscall/syscall.h"
 #include "kernel/usermode.h"
-#include "multiboot.h"
 #include "libk/kprint.h"
-#include "drivers/video/vga.h"
-#include "drivers/fs/ext2.h"
-#include "drivers/ata/ata.h"
-#include "drivers/block/blkdev.h"
+
+// Misc subsystems
 #include "log.h"
-#include "drivers/serial/serial.h"
 #include "mm/mm.h"
 #include "idt.h"
 #include "gdt.h"
 #include "tss.h"
+#include "multiboot.h"
+
+// Kernel drivers
+#include "drivers/block/blkdev.h"
+#include "drivers/serial/serial.h"
+#include "drivers/keyboard/keyboard.h"
+#include "drivers/video/vga.h"
+#include "drivers/fs/ext2.h"
+#include "drivers/ata/ata.h"
+#include "drivers/fs/initramfs.h"
+#include "drivers/vfs/vfs.h"
 
 // External subsystems
 extern int vfs_init(void);
@@ -151,6 +158,9 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     pit_check();
 
     pic_clear_mask(0);
+    pic_clear_mask(1);
+
+    keyboard_init();
 
     uint8_t mask = inb(0x21);
     klogf("[pic] PIC1 mask is 0x%02x (bit 0 should be 0)\n", mask);
@@ -225,6 +235,13 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     
     dump_eflags("[cpu] Before sti\n");
     __asm__ volatile("sti");
+
+    klogf("[kbd] press any key...\n");
+    while (keyboard_getchar() < 0) {
+        __asm__ volatile("hlt");
+    }
+    klogf("[kbd] got key!\n");
+
     dump_eflags("[cpu] After sti\n");
     
     klogf("[cpu] Interrupts enabled via sti\n");

@@ -32,7 +32,7 @@ void syscall_register_all(void) {
 }
 
 void syscall_init(void) {
-    idt_set_gate(0x80, (uint32_t)isr_syscall_stub, 0x08, 0xEE);
+    idt_set_gate(0x80, (uint32_t)isr_syscall_stub, 0x08, 0xEF);
     klogf("[sysint] Interface created at vector 0x80.\n");
 }
 
