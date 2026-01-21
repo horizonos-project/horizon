@@ -1,55 +1,159 @@
-# Horizon Live Environment Setup Guide
+# HorizonOS Development Environment Setup
 
-To set up HorizonOS for use in an emulator such as qemu (recommended) or on actual hardware (untested) via building from the source, you will need the following tools to make this possible.
+This document describes how to build and run HorizonOS in an emulator.
+Running on real hardware is currently untested and **not recommended**.
 
 > [!CAUTION]
-> This project is not in a state that one should use it as a daily-use operating system. Please do not use this for daily tasks!
-
-| Tool | Version | Notes |
-| ---- | ------- | ----- |
-| GCC     | $\geq$ 11.2.0   | Compiler and Assembler     |
-| make    | $\geq$ 4.3      | Build system               |
-| grub    | latest          | Required for mkrescue      |
-| xorriso | latest          | ISO 9660 writer            |
+> HorizonOS is an experimental operating system kernel.  
+> It is **not** suitable for daily use.
 
 ---
 
-For GCC, this project uses the generic `i686-elf` toolchains, which you can install with one of these commands:
+## Requirements
 
-> **Arch Linux:** `sudo yay i686-elf-binutils i686-elf-gcc`
+You will need the following tools installed on your system:
 
-> **Debian:** `sudo apt-get install i686-elf-binutils i686-elf-gcc -y`
+| Tool | Purpose |
+|------|--------|
+| GNU Make | Build system |
+| QEMU (i386) | Emulator |
+| i686-elf cross toolchain | Compiler, assembler, linker |
+| GRUB (`mkrescue`) | ISO creation |
+| xorriso | ISO 9660 writer |
 
-> **MacOS:** `brew install i686-elf-gcc`
+---
 
-> [!TIP]
-> For macOS developers, you'll want to also `brew install e2fsprogs` and then force link it `brew link --force e2fsprogs` for the `create_disk` script to work.
+## Cross Toolchain (Required)
 
-Compilation and assembly are unified under `i686-elf-*` to minimize dependencies and ensure complete compatibility. This will remain the case for the forseeable future.
+HorizonOS **requires** an `i686-elf` cross toolchain.  
+The host system compiler **will not work**.
 
-Make comes preinstalled across Linux and MacOS.
+Required binaries:
 
-### How about Windows?
+- `i686-elf-gcc`
+- `i686-elf-ld`
+- `i686-elf-as`
+- `i686-elf-ar`
+- `i686-elf-objcopy`
 
-Unless you use Windows Subsystem for Linux, this project is not compilable in any Windows x64 or x86 environments. Windows is not built for projects of this nature. Using either a Linux subsystem or a virtual machine is preferred. Attempting to build this kernel with Windows and its tools (`MSVC` and `LINK`) is untested waters and compatibility is NOT guaranteed!
+---
 
-### How about ARM?
+### Installing the Toolchain
 
-ARM is not supported at this time, we can barely handle x86 at this time, arm64 might blow up the entire project. It may be considered in the far future once this project has more contributors and has more hardware that it can be tested on.
+#### Arch Linux
+```sh
+yay -S i686-elf-binutils i686-elf-gcc
+```
 
-# Building the Project
+#### Other Linux Distributions
 
-This project uses Make, since it's insanely straightforward and borderline universal. We will not be switching to another buildsystem unless it becomes absolutely needed.
+Most distributions do **not** ship `i686-elf-*` packages.
 
-<!-- Hint, it won't. Linux has been doing this since '91 -->
+Build the cross compiler manually following:
+ * [https://wiki.osdev.org/GCC_Cross-Compiler](https://wiki.osdev.org/GCC_Cross-Compiler)
 
-| Build cmd | What it does |
-| --- | --- |
-| `make raw` | Builds the raw kernel ELF without packing into an ISO. |
-| `make iso` | Builds the kernel and packages it into an ISO alongside some GRUB data. |
-| `make run` | Runs the kernel inside `qemu-system-i386` (builds the kernel if not found) |
-| `make run-iso` | Runs the ISO in `qemu-system-i386` (will build the ISO if missing) |
-| `make debug` | Runs the kernel in the qemu system but in debug mode. |
-| `make rebuild` | Cleans the build directory and rebuilds the kernel ELF. |
-| `make list-src` | Lists all the source files and the targets in the Makefile. |
-| `make clean` | Cleans out the build directory. |
+This is the recommended and most reliable approach.
+
+#### macOS
+
+Homebrew support for `i686-elf-gcc` is inconsistent and may be outdated.
+
+You will likely need to:
+
+* build the toolchain manually, **or**
+* use a prebuilt tap if available
+
+Additionally, macOS users **must** install Docker for ext2 tooling support:
+
+```sh
+brew install docker
+```
+
+---
+
+## ext2 Disk Image Support
+
+HorizonOS boots from an **ext2 disk image**.
+
+* On Linux, native `e2fsprogs` tools are typically available
+* On macOS, ext2 utilities are accessed via Docker
+
+Disk image creation is handled automatically by:
+
+```sh
+make disk
+```
+
+---
+
+## QEMU
+
+HorizonOS runs under `qemu-system-i386`.
+
+### Linux
+
+```sh
+sudo apt install qemu-system-x86
+```
+
+### macOS
+
+```sh
+brew install qemu
+```
+
+---
+
+## Building HorizonOS
+
+HorizonOS uses **GNU Make** as its build system.
+
+> We will not be switching build systems unless absolutely necessary.
+<!-- Hint: this will never happen. Linux has been doing this since '91. -->
+
+### Common Make Targets
+
+| Command         | Description                  |
+| --------------- | ---------------------------- |
+| `make`          | Build kernel and libk        |
+| `make raw`      | Build raw kernel ELF         |
+| `make iso`      | Build bootable ISO           |
+| `make disk`     | Create ext2 disk image       |
+| `make run`      | Run kernel directly in QEMU  |
+| `make run-iso`  | Run ISO in QEMU              |
+| `make debug`    | Run with GDB stub            |
+| `make clean`    | Remove build artifacts       |
+| `make list-src` | Show discovered source files |
+
+---
+
+## Platform Notes
+
+### Windows
+
+Native Windows builds are **not supported**.
+
+Use one of the following instead:
+
+* Windows Subsystem for Linux (WSL2)
+* A Linux virtual machine
+
+Attempting to build with MSVC or Windows toolchains is unsupported and untested. You do so at your own risk.
+
+---
+
+### ARM
+
+ARM is **not supported** at this time.
+
+The project is currently focused on stabilizing x86 (32-bit) support first.
+
+---
+
+## Current Limitations
+
+* 32-bit x86 only
+* Single userspace process
+* No scheduler yet
+* ext2 is read-only
+* `/bin/hello` is loaded directly from disk
