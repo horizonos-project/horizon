@@ -1,4 +1,4 @@
-* Fix `syscall_handler()` null-dispatch crash
+~~* Fix `syscall_handler()` null-dispatch crash~~
 
   * **Where:** `src/kernel/syscall/syscall.c`
   * **Do:** if `num` invalid or `syscalls[num]==NULL`, set `r->eax = -ENOSYS` (or `-1`) and `return;` (do **not** call through)
