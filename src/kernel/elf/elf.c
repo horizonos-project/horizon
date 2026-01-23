@@ -4,6 +4,9 @@
 #include "../../mm/pmm.h"
 #include "../../libk/string.h"
 
+#define USER_VADDR_MIN  0x00400000  // 4 MB, standard ELF base
+#define USER_VADDR_MAX  0xBFFFFFFF  // just below kernel space
+
 // Internal ELF header validation
 static int elf_validate_header(const Elf32_Ehdr *hdr) {
     uint32_t magic =
@@ -27,6 +30,16 @@ static int elf_validate_header(const Elf32_Ehdr *hdr) {
         return -1;
     }
 
+    if (hdr->e_ident[6] != 1) {
+        klogf("[elf] Unsupported EI_VERSION %u\n", hdr->e_ident[6]);
+        return -1;
+    }
+
+    if (hdr->e_version != 1) {
+        klogf("[elf] Unsupported ELF version %u\n", hdr->e_version);
+        return -1;
+    }
+
     if (hdr->e_type != ET_EXEC) {
         klogf("[elf] Not an executable (e_type=%u)\n", hdr->e_type);
         return -1;
@@ -37,8 +50,14 @@ static int elf_validate_header(const Elf32_Ehdr *hdr) {
         return -1;
     }
 
+    if (hdr->e_entry < USER_VADDR_MIN || hdr->e_entry > USER_VADDR_MAX) {
+        klogf("[elf] Entry point out of user range: 0x%08x\n", hdr->e_entry);
+        return -1;
+    }
+
     return 0;
 }
+
 
 // Mapping a PT_LOAD segment
 static int elf_load_segment(const uint8_t *data, const Elf32_Phdr *phdr) {

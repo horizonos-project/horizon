@@ -29,7 +29,7 @@
 #include <stdint.h>
 
 /** @brief Null pointer constant for unimplemented syscalls */
-#define SYSCALL_NULL ((void*)0)
+#define SYSCALL_NULL ((syscall_t)0)
 
 /** @brief Terminate process */
 #define SYS_EXIT    1

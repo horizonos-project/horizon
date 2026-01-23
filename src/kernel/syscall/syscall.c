@@ -3,6 +3,7 @@
 #include "kernel/idt.h"
 #include "kernel/isr.h"
 #include "kernel/log.h"
+#include "kernel/errno.h"
 #include "sys_process.h"
 
 extern void isr_syscall_stub(void);
@@ -41,6 +42,8 @@ void syscall_handler(regs_t *r) {
 
     if (num >= MAX_SYSCALLS || syscalls[num] == SYSCALL_NULL) {
         klogf("[sysint] Unknown SYSCALL: %u\n", num);
+        r->eax = (uint32_t)SYSCALL_ERR(ENOSYS);
+        return;
     }
 
     uint32_t ret = syscalls[num](
