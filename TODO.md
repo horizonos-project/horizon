@@ -127,3 +127,5 @@
 
   * **Where:** move files into `arch/x86/`, `kernel/`, `drivers/`, `fs/`, `libk/`
   * **Do:** relocate `idt/gdt/tss/isr_stubs/syscall_asm` under `arch/x86/` and update includes/Makefile paths
+
+* Finish implementing `build_initproc.sh` and patching Makefile
