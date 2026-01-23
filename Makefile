@@ -176,8 +176,8 @@ iso: $(KERNEL)
 	@cp ./grub.cfg $(BUILD)/iso/boot/grub/
 	@$(RESCUE) -o $(ISO) $(BUILD)/iso
 
-run: raw
-	$(Q)bash ./create_disk.sh
+run:
+#	$(Q)bash ./create_disk.sh
 	@printf "$(BLUE)[RUN]$(RESET) Running kernel in qemu-system-i386...\n"
 	@qemu-system-i386 -kernel $(KERNEL) -m 128M \
 		-drive file=build/disk.img,format=raw,if=ide \
