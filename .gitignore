@@ -10,6 +10,9 @@ latex/
 
 # Build directory
 build/
+init/etc/
+init/sbin/
+init/bin
 
 # initramfs directory
 initramfs/

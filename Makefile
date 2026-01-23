@@ -58,7 +58,6 @@ BOOT_SRC	:= $(SRC_D)/boot/boot.S $(SRC_D)/kernel/isr_stubs.S $(SRC_D)/kernel/sys
 BOOT_SRC	+= src/kernel/gdt_asm.S
 LIBK_SRC	:= $(shell find $(SRC_D)/libk -type f -name '*.c' 2>/dev/null)
 KERNEL_SRC 	:= $(shell find $(SRC_D) -type f -name '*.c' -not -path "$(SRC_D)/libk/*" 2>/dev/null)
-INITRAMFS	:= build/initramfs.o
 
 # The many iterations of this src only to learn that I needed to rename isr.asm 
 # KERNEL_SRC 	:= $(shell find $(SRC_D)/kernel $(SRC_D)/mm $(SRC_D)/drivers -type f -name '*.c' 2>/dev/null)
@@ -70,7 +69,7 @@ BOOT_OBJS   := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(BOOT_SRC:.S=.o))
 KERNEL_OBJS := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(KERNEL_SRC:.c=.o))
 LIBK_OBJS	:= $(patsubst $(SRC_D)/%, $(BUILD)/%, $(LIBK_SRC:.c=.o))
 LIBK_A		:= $(BUILD)/libk/libk.a
-OBJS        := $(BOOT_OBJS) $(KERNEL_OBJS) $(INITRAMFS)
+OBJS        := $(BOOT_OBJS) $(KERNEL_OBJS)
 
 # -----------------------------------------------------------------------------
 # Flags (optimized for pedantic compiling, legacy asm instructions and 32 bit)
@@ -154,15 +153,15 @@ $(KERNEL): $(OBJS) $(LIBK_A)
 libk: $(LIBK_A)
 	@printf "$(GREEN)[OK!]$(RESET) libk.a built successfully.\n"
 
-$(INITRAMFS): initramfs.tar
-	@printf "$(BLUE)[INITRAMFS]$(RESET) Creating initramfs object\n"
-	$(Q)i686-elf-objcopy -I binary -O elf32-i386 -B i386 \
-		--rename-section .data=.initramfs,alloc,load,readonly,data,contents \
-		initramfs.tar $@
+# $(INITRAMFS): initramfs.tar
+# 	@printf "$(BLUE)[INITRAMFS]$(RESET) Creating initramfs object\n"
+# 	$(Q)i686-elf-objcopy -I binary -O elf32-i386 -B i386 \
+# 		--rename-section .data=.initramfs,alloc,load,readonly,data,contents \
+# 		initramfs.tar $@
 
-initramfs.tar: build_initramfs.sh
-	@printf "$(BLUE)[TAR]$(RESET) Building initramfs\n"
-	$(Q)./build_initramfs.sh
+# initramfs.tar: build_initramfs.sh
+# 	@printf "$(BLUE)[TAR]$(RESET) Building initramfs\n"
+# 	$(Q)./build_initramfs.sh
 
 # -----------------------------------------------------------------------------
 # Targets
@@ -176,8 +175,8 @@ iso: $(KERNEL)
 	@cp ./grub.cfg $(BUILD)/iso/boot/grub/
 	@$(RESCUE) -o $(ISO) $(BUILD)/iso
 
-run:
-#	$(Q)bash ./create_disk.sh
+run: raw
+	@bash ./build_initproc.sh
 	@printf "$(BLUE)[RUN]$(RESET) Running kernel in qemu-system-i386...\n"
 	@qemu-system-i386 -kernel $(KERNEL) -m 128M \
 		-drive file=build/disk.img,format=raw,if=ide \
@@ -185,7 +184,7 @@ run:
 		-no-reboot -no-shutdown
 
 run-iso: iso
-	$(Q)bash ./create_disk.sh
+	@bash ./build_initproc.sh
 	@printf "$(BLUE)[RUN]$(RESET) Running ISO in qemu-system-i386...\n"
 	@qemu-system-i386 -cdrom $(ISO) -m 128M \
 		-drive file=build/disk.img,format=raw,if=ide \

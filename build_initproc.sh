@@ -1,12 +1,32 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-mkdir -pv init/{sbin,bin,etc}
+# Paths
+ROOT_DIR="init"
+OUT_DIR="build"
+IMG="${OUT_DIR}/disk.img"
 
-echo "Message of the Day: This commit is probably broken!.\n" > init/etc/motd
-echo "Welcome to HorizonOS!" > init/etc/welc
+IMG_SIZE="64M"
 
-# Remove existing sbin/init and recompile init/init.c in-place
-# move new init binary to sbin directory
-# via Docker, write all contents of ./init/ dir into an ext2 image
-# move entire image (*.img) to build dir
-#
+# --- Populate init/ tree ----------------------------------------------------
+mkdir -pv "${ROOT_DIR}"/{sbin,bin,etc}
+
+printf "Message of the Day: This commit is probably broken!.\n" > "${ROOT_DIR}/etc/motd"
+printf "Welcome to HorizonOS!\n" > "${ROOT_DIR}/etc/welcome"
+
+# Build init into the tree (note: output should be init/sbin/init)
+rm -f "${ROOT_DIR}/sbin/init"
+i686-elf-gcc \
+  -nostdinc -nostdlib -ffreestanding \
+  -m32 -Ttext=0x00400000 -o "${ROOT_DIR}/sbin/init" \
+  init/init.c
+
+# --- Make ext2 image as a raw "whole disk" ---------------------------------
+mkdir -p "${OUT_DIR}"
+rm -f "${IMG}"
+truncate -s "${IMG_SIZE}" "${IMG}"
+
+# This copies the directory tree directly into the new filesystem.
+mkfs.ext2 -F -I 128 -N 4096 -d "${ROOT_DIR}" "${IMG}"
+
+echo "[ok] Wrote ext2 rootfs to ${IMG} (size ${IMG_SIZE})"

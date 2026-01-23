@@ -283,7 +283,7 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
 
     // ========== Phase 6: Launch Userspace ==========
 
-    jump_to_elf("/bin/hello");
+    jump_to_elf("/sbin/init");
 
     // ========== System Halt (Should Never Reach Here) ==========
 
