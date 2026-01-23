@@ -89,37 +89,6 @@ static void print(const char *s) {
 
 void _start(void) {
     print("Horizon init online.\n");
-
-    char buf[128];
-
-    while (1) {
-        print("> ");
-
-        int i = 0;
-        while (i < (int)sizeof(buf) - 1) {
-            char c;
-            int n = read(0, &c, 1);
-            if (n <= 0) continue;
-
-            if (c == '\r') continue;
-
-            if (c == '\n') {
-                break;
-            }
-
-            // basic backspace handling (optional)
-            if (c == '\b') {
-                if (i > 0) i--;
-                continue;
-            }
-
-            buf[i++] = c;
-        }
-        buf[i] = 0;
-
-        print("\nYou typed: ");
-        write(1, buf, i);
-        print("\n");
-    }
+    exit(0);
 }
 
