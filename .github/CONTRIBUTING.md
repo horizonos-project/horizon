@@ -74,6 +74,7 @@ Keep in mind HorizonOS is experimental and focused on learning/exploration, so n
 #### Code Style
 
 - **C code:** Follow the existing style (K&R, 4-space indentation)
+    * The code should compile under the `c11` standard, do not use any compiler-specific extensions!
 - **Assembly:** Keep it readable with comments explaining non-obvious behavior
 - **Comments:** Explain *why*, not *what* (code shows what)
 - **Naming:** Use clear, descriptive names (`pmm_alloc_frame` not `paf`)

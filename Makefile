@@ -78,7 +78,7 @@ CFLAGS  := -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32 -O1 \
 			-fno-omit-frame-pointer -fno-builtin -Wall -Wextra -Wpedantic \
 			-Wno-unused-function -Wno-unused-parameter -Wno-pointer-to-int-cast \
 			-I$(SRC_D) -isystem $(shell $(CC) -print-file-name=include) \
-			-nostdinc -mno-sse -mno-sse2 -mno-mmx -mno-3dnow \
+			-nostdinc -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -std=c11 \
 			-Werror=implicit-function-declaration -Werror=return-type \
 			-Werror=incompatible-pointer-types -g -Wstrict-prototypes \
 			-DHORIZON_VERSION=\"$(VERSION)\" \
