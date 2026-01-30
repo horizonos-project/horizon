@@ -16,7 +16,7 @@
 #define SYS_OPEN   5
 #define SYS_CLOSE  6
 #define SYS_BRK    45
-#define SYS_CLEAR_VGA 200
+#define SYS_CLEAR_VGA 500
 
 static inline int syscall1(int num, int arg1) {
     int ret;
