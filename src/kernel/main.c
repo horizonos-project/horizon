@@ -236,11 +236,11 @@ void kmain(uint32_t magic, uint32_t mb_info_addr) {
     dump_eflags("[cpu] Before sti\n");
     __asm__ volatile("sti");
 
-    klogf("[kbd] press any key...\n");
-    while (keyboard_getchar() < 0) {
-        __asm__ volatile("hlt");
-    }
-    klogf("[kbd] got key!\n");
+    // klogf("[kbd] press any key...\n");
+    // while (keyboard_getchar() < 0) {
+    //     __asm__ volatile("hlt");
+    // }
+    // klogf("[kbd] got key!\n");
 
     dump_eflags("[cpu] After sti\n");
     
