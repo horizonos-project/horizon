@@ -62,7 +62,7 @@
 #define SYS_BRK     45
 
 /** @brief Clears VGA memory (HorizonOS specific) */
-#define SYS_CLEAR_VGA 200
+#define SYS_CLEAR_VGA 500
 
 /**
  * @brief Syscall handler function type
@@ -76,6 +76,7 @@
  * @param arg3 Third argument (from EDX)
  * @param arg4 Fourth argument (from ESI)
  * @param arg5 Fifth argument (from EDI)
+ * @param arg6 Sixth argument (from EBP)
  * @return Syscall result (returned to user in EAX)
  * 
  * Example implementation:
@@ -87,7 +88,7 @@
  * }
  * @endcode
  */
-typedef uint32_t (*syscall_t)(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
+typedef int32_t (*syscall_t)(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
 
 /** @brief Maximum number of syscalls supported */
 #define MAX_SYSCALLS 1024

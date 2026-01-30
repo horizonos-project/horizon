@@ -79,7 +79,10 @@ CFLAGS  := -ffreestanding -fno-stack-protector -fno-pic -fno-pie -m32 -O1 \
 			-Wno-unused-function -Wno-unused-parameter -Wno-pointer-to-int-cast \
 			-I$(SRC_D) -isystem $(shell $(CC) -print-file-name=include) \
 			-nostdinc -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -std=c11 \
+			-MMD -MP -fno-common -fno-asynchronous-unwind-tables \
+			-fno-unwind-tables -fno-delete-null-pointer-checks \
 			-Werror=implicit-function-declaration -Werror=return-type \
+			-Werror=implicit-int \
 			-Werror=incompatible-pointer-types -g -Wstrict-prototypes \
 			-DHORIZON_VERSION=\"$(VERSION)\" \
 			-DHORIZON_BUILD_DATE=\"$(BUILD_DATE)\"

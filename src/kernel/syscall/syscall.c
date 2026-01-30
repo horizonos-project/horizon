@@ -46,8 +46,8 @@ void syscall_handler(regs_t *r) {
         return;
     }
 
-    uint32_t ret = syscalls[num](
-        r->ebx, r->ecx, r->edx, r->esi, r->edi
+    int32_t ret = syscalls[num](
+        r->ebx, r->ecx, r->edx, r->esi, r->edi, r->ebp
     );
 
     r->eax = ret;
