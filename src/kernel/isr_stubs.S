@@ -93,54 +93,65 @@ IRQ_STUB 15, 47
 
 // Common ISR handler
 isr_common_stub:
-    // Save all registers
     pusha
-    
+
+    // Save current segment registers (could be user segments if coming from ring3)
     pushl %ds
     pushl %es
     pushl %fs
     pushl %gs
-    
-    // Call C handler
+
+    // Load kernel data segments for safe C execution
+    movw $0x10, %ax          // KERNEL_DS
+    movw %ax, %ds
+    movw %ax, %es
+    movw %ax, %fs
+    movw %ax, %gs
+
+    // Pass &regs_t (points at gs,fs,es,ds,...) to C
     movl %esp, %eax
     pushl %eax
     call isr_handler
     addl $4, %esp
-    
-    // Restore registers
+
+    // Restore original segment registers
     popl %gs
     popl %fs
     popl %es
     popl %ds
-    
+
     popa
-    
-    addl $8, %esp       // drop int_no and err_code
+
+    addl $8, %esp            // drop int_no and err_code
     iret
+
 
 // Common IRQ handler
 irq_common_stub:
-    // Save all registers
     pusha
-    
+
     pushl %ds
     pushl %es
     pushl %fs
     pushl %gs
-    
-    // Call C handler
+
+    movw $0x10, %ax          // KERNEL_DS
+    movw %ax, %ds
+    movw %ax, %es
+    movw %ax, %fs
+    movw %ax, %gs
+
     movl %esp, %eax
     pushl %eax
     call irq_handler
     addl $4, %esp
-    
-    // Restore registers
+
     popl %gs
     popl %fs
     popl %es
     popl %ds
-    
+
     popa
-    
-    addl $8, %esp       // drop int_no and err_code
+
+    addl $8, %esp
     iret

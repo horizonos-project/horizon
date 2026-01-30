@@ -10,7 +10,7 @@ extern void isr_syscall_stub(void);
 
 static syscall_t syscalls[MAX_SYSCALLS];
 
-void syscall_register(uint8_t num, syscall_t func) {
+void syscall_register(uint32_t num, syscall_t func) {
     if (num >= MAX_SYSCALLS)
         return;
 

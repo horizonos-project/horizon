@@ -88,6 +88,7 @@ static void print(const char *s) {
 // --------------------------------------------------
 
 void _start(void) {
+    clear();
     print("Horizon init online.\n");
     exit(0);
 }
