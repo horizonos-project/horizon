@@ -50,7 +50,6 @@ ISO 	:= $(BUILD)/Horizon.iso
 KERNEL 	:= $(BUILD)/kernel.elf
 LINKER	:= $(SRC_D)/kernel/linker.ld
 
-
 # -----------------------------------------------------------------------------
 # Source discovery (which is super helpful)
 # -----------------------------------------------------------------------------
@@ -58,12 +57,6 @@ BOOT_SRC	:= $(SRC_D)/boot/boot.S $(SRC_D)/kernel/isr_stubs.S $(SRC_D)/kernel/sys
 BOOT_SRC	+= src/kernel/gdt_asm.S
 LIBK_SRC	:= $(shell find $(SRC_D)/libk -type f -name '*.c' 2>/dev/null)
 KERNEL_SRC 	:= $(shell find $(SRC_D) -type f -name '*.c' -not -path "$(SRC_D)/libk/*" 2>/dev/null)
-
-# The many iterations of this src only to learn that I needed to rename isr.asm 
-# KERNEL_SRC 	:= $(shell find $(SRC_D)/kernel $(SRC_D)/mm $(SRC_D)/drivers -type f -name '*.c' 2>/dev/null)
-# KERNEL_SRC 	:= $(shell find $(SRC_D)/kernel $(SRC_D)/mm -type f -name '*.c' 2>/dev/null)
-# KERNEL_SRC 	:= $(shell find $(SRC_D) -type f -name '*.c' ! -path "$(SRC_D)/libk/*" 2>/dev/null)
-# KERNEL_SRC	:= $(shell find $(SRC_D) -type f -name '*.c' ! -path "$(SRC_D)/libk/*")
 
 BOOT_OBJS   := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(BOOT_SRC:.S=.o))
 KERNEL_OBJS := $(patsubst $(SRC_D)/%, $(BUILD)/%, $(KERNEL_SRC:.c=.o))
@@ -199,10 +192,6 @@ debug: raw
 	@qemu-system-i386 -kernel $(KERNEL) -s -S -m 128M \
 		-serial stdio -display default \
 		-no-reboot -no-shutdown
-
-disk:
-	$(Q)bash ./create_disk.sh
-	@printf "$(GREEN)[OK!]$(RESET) Disk image created at build/disk.img\n"
 
 clean:
 	@rm -rf ./initramfs.*
