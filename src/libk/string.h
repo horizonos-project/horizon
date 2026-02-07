@@ -13,6 +13,9 @@
 
 #pragma once
 #include <stddef.h>
+#ifndef NULL
+    #define NULL ((void*)0)
+#endif
 
 /**
  * @brief Compare two null-terminated strings
@@ -81,6 +84,8 @@ char *strncpy(char *dest, const char *src, size_t n);
  */
 void *memcpy(void *dest, const void *src, size_t n);
 
+void *memmove(void *dest, const void *src, size_t n);
+
 /**
  * @brief Fill memory with a constant byte
  * 
@@ -121,8 +126,6 @@ char *strtok(char *str, const char *delim);
 
 /**
  * @brief Find first occurrence of character in string
- * 
- * Helper function for strtok.
  * 
  * @param s String to search
  * @param c Character to find

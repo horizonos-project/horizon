@@ -1,30 +1,3 @@
-~~* Fix `syscall_handler()` null-dispatch crash~~
-
-  * **Where:** `src/kernel/syscall/syscall.c`
-  * **Do:** if `num` invalid or `syscalls[num]==NULL`, set `r->eax = -ENOSYS` (or `-1`) and `return;` (do **not** call through)
-
-* Decide/standardize syscall error convention
-
-  * **Where:** `src/kernel/syscall/syscall.c` + all `sys_*` in `src/kernel/syscall/*`
-  * **Do:** pick `-errno` (recommended) or `-1`; apply consistently
-
-* Fix syscall IDT gate flags
-
-  * **Where:** `src/kernel/syscall/syscall.c` (`syscall_init`)
-  * **Do:** set `idt_set_gate(0x80, ..., 0x08, 0xEE)` (interrupt gate, DPL=3)
-  * **Alt:** if you intentionally want trap gate, keep `0xEF` but document why
-
-* Fix syscall ASM stub to match `regs_t` layout
-
-  * **Where:** `src/kernel/syscall/syscall_asm.S`
-  * **Do:** push fake `err_code` + `int_no` (0 + 0x80) so `regs_t*` points to a correctly-shaped frame
-  * **Do:** drop those 8 bytes before `iret` (like ISR stubs)
-
-* Fix syscall return value clobbered by `popa`
-
-  * **Where:** `src/kernel/syscall/syscall_asm.S`
-  * **Do:** ensure `syscall_handler` writes into the saved `eax` slot that `popa` restores (i.e., make syscall frame identical to ISR frame)
-
 * Load kernel segment selectors before calling C in syscall stub
 
   * **Where:** `src/kernel/syscall/syscall_asm.S`
@@ -128,4 +101,3 @@
   * **Where:** move files into `arch/x86/`, `kernel/`, `drivers/`, `fs/`, `libk/`
   * **Do:** relocate `idt/gdt/tss/isr_stubs/syscall_asm` under `arch/x86/` and update includes/Makefile paths
 
-~~* Finish implementing `build_initproc.sh` and patching Makefile~~
