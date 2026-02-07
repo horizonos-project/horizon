@@ -157,3 +157,30 @@ The project is currently focused on stabilizing x86 (32-bit) support first.
 * No scheduler yet
 * ext2 is read-only
 * `/bin/hello` is loaded directly from disk
+
+<!--
+binutils:
+../binutils-2.45/configure \
+    --target="$TARGET" \
+    --prefix="$PREFIX" \
+    --with-sysroot \
+    --disable-nls \
+    --disable-werror \
+
+gcc:
+../gcc-15.2.0/configure \                                              
+  --target="$TARGET" \
+  --prefix="$PREFIX" \
+  --disable-nls \
+  --enable-languages=c,c++ \
+  --without-headers \
+  --disable-shared \
+  --disable-threads \
+  --disable-libssp \
+  --disable-libmudflap \
+  --disable-libgomp \
+  --disable-libquadmath \
+  --disable-libatomic \
+  --disable-multilib
+
+-->
