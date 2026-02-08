@@ -2,6 +2,8 @@
 
 [![GitHub top language](https://img.shields.io/github/languages/top/horizonos-project/horizon?logo=c&label=)](https://github.com/horizonos-project/horizon/blob/main/Makefile)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/horizonos-project/horizon)](https://github.com/horizonos-project/horizon/commits)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/horizonos-project/horizon)
+
 
 Horizon OS (sometimes 'HorizonOS' or 'Horizon') is a 32-bit Operating System. Horizon is almost entirely written in C with some AT&T Assembly as needed. This exists as a side project, something to work on semi-frequently to see if something interesting can come from it. My hopes are high that this will grow over time!
 
