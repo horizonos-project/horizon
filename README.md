@@ -1,5 +1,33 @@
-# HorizonOS
+# ~~HorizonOS~~ Rebranding, Archival & Licensing Announcement
 
+[![GitHub top language](https://img.shields.io/github/languages/top/horizonos-project/horizon?logo=c\&label=)](https://github.com/horizonos-project/horizon/blob/main/Makefile)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/horizonos-project/horizon)](https://github.com/horizonos-project/horizon/commits)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/horizonos-project/horizon)
+
+HorizonOS has been a technically ambitious and educational project. However, due to accumulated technical debt, heavy reliance on AI-assisted code generation, and early design decisions that no longer reflect my current standards, this repository will now be publicly archived.
+
+Future development will continue under a new name: [Lithium](https://github.com/lithium-os/lithium)
+
+→ [https://github.com/lithium-os/lithium](https://github.com/lithium-os/lithium)
+
+A considerable portion of Horizon's codebase will be refactored, reorganized, and reimplemented as part of this new project.
+
+## Licensing & Public Domain Dedication
+
+As of the archival of this repository, the source code is permanently released **as-is**, **where-is** under Creative Commons Zero (CC0).
+
+**I, the creator and rights holder of this project, hereby dedicate this work to the public domain. To the fullest extent permitted by applicable law, I waive all copyright and related rights to this work worldwide.**
+
+**This means the project may be used, copied, modified, distributed, and performed by anyone, for any purpose, commercial or non-commercial, without asking permission or providing attribution.**
+
+## Closing Note
+
+Thank you to everyone who followed or contributed to HorizonOS during its development. This project was an important step in my OSDev journey — now it's time to modernize, rebuild, and move forward with a stronger foundation.
+
+– Wellbutteredtoast (Sam W.)
+
+
+<!--
 [![GitHub top language](https://img.shields.io/github/languages/top/horizonos-project/horizon?logo=c&label=)](https://github.com/horizonos-project/horizon/blob/main/Makefile)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/horizonos-project/horizon)](https://github.com/horizonos-project/horizon/commits)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/horizonos-project/horizon)
@@ -53,3 +81,4 @@ Horizon uses a modified style of [Semantic Versioning](https://semver.org) that 
 
 > [!NOTE]
 > **-A** is the bugfix tag, if a release has bugs, they'll be pushed under this tag and should *fix* issues rather than cause them. This will be used starting at the first major release of Horizon. 1.00.00.
+-->
